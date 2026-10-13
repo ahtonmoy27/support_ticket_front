@@ -64,4 +64,3 @@ describe('UI Components', () => {
     expect(screen.getByText('Page 2 of 4')).toBeDefined()
   })
 })
-

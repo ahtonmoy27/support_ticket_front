@@ -91,10 +91,14 @@ export async function api<T>(
 export async function download(path: string, filename: string) {
   const response = await fetch('/api/v1' + path, {
     credentials: 'same-origin',
-    headers: { Accept: 'application/octet-stream, application/json' },
+    headers: { Accept: 'application/octet-stream, application/json, text/csv, */*' },
+    cache: 'no-store',
   })
   if (!response.ok) throw await failed(response)
-  if (!response.headers.get('content-disposition')?.includes('attachment'))
+  if (
+    response.headers.get('content-type')?.includes('application/json') ||
+    !response.headers.get('content-disposition')?.includes('attachment')
+  )
     throw new Error('The server did not return a file.')
   const url = URL.createObjectURL(await response.blob())
   const link = document.createElement('a')

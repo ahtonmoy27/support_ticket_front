@@ -167,4 +167,3 @@ describe('utils', () => {
     expect(errorText(genericError)).toBe('Custom failure message')
   })
 })
-

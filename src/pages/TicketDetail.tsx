@@ -313,15 +313,35 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
                                     : 'User #' + a.actor_id}{' '}
                                 · {date(a.created_at)}
                               </p>
-                              {Object.entries(a.new_values).map(([key, value]) => (
-                                <small key={key}>
-                                  {label(key)}:{' '}
-                                  {key in a.old_values
-                                    ? String((a.old_values as Record<string, unknown>)[key]) + ' → '
-                                    : ''}
-                                  {String(value)}
-                                </small>
-                              ))}
+                              {(() => {
+                                const oldMap = (
+                                  a.old_values &&
+                                  typeof a.old_values === 'object' &&
+                                  !Array.isArray(a.old_values)
+                                    ? a.old_values
+                                    : {}
+                                ) as Record<string, unknown>
+                                const newMap = (
+                                  a.new_values &&
+                                  typeof a.new_values === 'object' &&
+                                  !Array.isArray(a.new_values)
+                                    ? a.new_values
+                                    : {}
+                                ) as Record<string, unknown>
+                                return Object.entries(newMap).map(([key, value]) => (
+                                  <small key={key}>
+                                    {label(key)}:{' '}
+                                    {key in oldMap
+                                      ? (typeof oldMap[key] === 'object' && oldMap[key] !== null
+                                          ? JSON.stringify(oldMap[key])
+                                          : String(oldMap[key])) + ' → '
+                                      : ''}
+                                    {typeof value === 'object' && value !== null
+                                      ? JSON.stringify(value)
+                                      : String(value)}
+                                  </small>
+                                ))
+                              })()}
                             </div>
                           </article>
                         ))}

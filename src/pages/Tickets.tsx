@@ -204,6 +204,7 @@ export default function Tickets() {
                   {agents.data && pageOf(agents.data).last > 1 && (
                     <span className="inline-pages">
                       <button
+                        type="button"
                         onClick={() =>
                           filter(
                             'agent_page',
@@ -214,6 +215,7 @@ export default function Tickets() {
                         Previous agents
                       </button>
                       <button
+                        type="button"
                         onClick={() =>
                           filter(
                             'agent_page',
@@ -257,6 +259,7 @@ export default function Tickets() {
           <div className="active-filters">
             <span>Filtered results</span>
             <button
+              type="button"
               onClick={() => {
                 setSearch('')
                 setParams({})
