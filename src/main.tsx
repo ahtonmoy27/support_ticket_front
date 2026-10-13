@@ -5,5 +5,14 @@ import { AuthProvider } from './providers/auth'
 import { ToastProvider } from './providers/toast'
 import App from './App'
 import './index.css'
-createRoot(document.getElementById('root')!).render(<StrictMode><BrowserRouter><AuthProvider><ToastProvider><App /></ToastProvider></AuthProvider></BrowserRouter></StrictMode>)
-
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>,
+)
