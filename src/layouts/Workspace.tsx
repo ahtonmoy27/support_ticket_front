@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../providers/auth'
 import { useToast } from '../providers/toast'
 import { Button } from '../components/ui'
+import { api } from '../lib/api'
 import { errorText, initials, label } from '../lib/utils'
 export default function Workspace() {
   const { user, logout } = useAuth()
@@ -30,6 +31,17 @@ export default function Workspace() {
   const [mobile, setMobile] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [unreadCount, setUnreadCount] = useState(0)
+  const fetchUnread = useCallback(() => {
+    api<{ count: number }>('/notifications/unread-count')
+      .then((d) => setUnreadCount(d.count))
+      .catch(() => {})
+  }, [])
+  useEffect(() => {
+    fetchUnread()
+    const timer = setInterval(fetchUnread, 60_000)
+    return () => clearInterval(timer)
+  }, [fetchUnread])
   if (!user) return null
   const links = [
     { to: '/dashboard', text: 'Overview', icon: LayoutDashboard },
