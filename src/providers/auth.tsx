@@ -30,7 +30,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false)
         }
       })
-      .catch((e: unknown) => {
+      .catch(async (e: unknown) => {
+        if (e instanceof ApiError && e.status === 403 && e.message === 'Account is inactive.') {
+          try {
+            await api('/logout', { method: 'POST' })
+            clearCsrf()
+            if (!controller.signal.aborted) {
+              setUser(null)
+              setError(null)
+              setLoading(false)
+            }
+          } catch (logoutError) {
+            if (!controller.signal.aborted) {
+              setError(logoutError)
+              setLoading(false)
+            }
+          }
+          return
+        }
         if (!controller.signal.aborted) {
           // A 401 simply means the user is not authenticated; that is not an error
           if (e instanceof ApiError && e.status === 401) {

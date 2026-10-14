@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxy = {
     '/api': {
-      target: env.API_PROXY_TARGET || 'http://138.252.125.172:8001',
+      target: env.API_PROXY_TARGET || 'http://127.0.0.1:8000',
       changeOrigin: true,
       cookieDomainRewrite: '',
     },

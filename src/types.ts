@@ -96,6 +96,7 @@ export interface Policy {
   calendar: { timezone: string; hours: Hours; exceptions: Hours | [] }
 }
 export interface Metrics {
+  by_agent?: { assigned_agent_id: number | null; name: string; total: number }[]
   by_status: Partial<Record<Status, number | string>>
   by_priority: Partial<Record<Priority, number | string>>
   unassigned: number

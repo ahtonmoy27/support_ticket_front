@@ -203,6 +203,41 @@ export default function Dashboard() {
       <section className="panel">
         <div className="panel-heading">
           <div>
+            <h2>Tickets by agent</h2>
+            <p>All statuses in your permitted scope</p>
+          </div>
+        </div>
+        {metrics.loading ? (
+          <TableSkeleton rows={3} cols={2} />
+        ) : metrics.error ? (
+          <ErrorState error={metrics.error} retry={metrics.refresh} />
+        ) : m?.by_agent?.length ? (
+          <div className="status-summary">
+            {m.by_agent.map((agent) => (
+              <Link
+                key={agent.assigned_agent_id ?? 'unassigned'}
+                to={
+                  agent.assigned_agent_id === null
+                    ? '/tickets?unassigned=1'
+                    : '/tickets?assigned_agent_id=' + agent.assigned_agent_id
+                }
+              >
+                <span>{agent.name}</span>
+                <strong>{agent.total}</strong>
+                <ArrowRight size={14} />
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <Empty
+            title="No agent totals yet"
+            text="Assigned and unassigned ticket totals will appear here."
+          />
+        )}
+      </section>
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
             <h2>Latest tickets</h2>
             <p>The most recent requests you can access</p>
           </div>

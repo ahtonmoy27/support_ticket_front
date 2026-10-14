@@ -65,3 +65,30 @@ it('discards the guest CSRF token after login and obtains the authenticated toke
   )
   expect(fetch.mock.calls.filter(([url]) => url === '/api/v1/csrf-token')).toHaveLength(2)
 })
+
+it('ends an inactive session before returning to guest navigation', async () => {
+  const fetch = vi.fn().mockImplementation(async (path: string) => {
+    const status = path.endsWith('/me') ? 403 : 200
+    const body = path.endsWith('/me')
+      ? { message: 'Account is inactive.' }
+      : path.endsWith('/csrf-token')
+        ? { csrf_token: 'session-token' }
+        : { message: 'Logged out.' }
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  })
+  vi.stubGlobal('fetch', fetch)
+  render(
+    <AuthProvider>
+      <Probe />
+    </AuthProvider>,
+  )
+  await screen.findByText('Guest')
+  expect(
+    fetch.mock.calls.some(
+      ([url, options]) => url === '/api/v1/logout' && options?.method === 'POST',
+    ),
+  ).toBe(true)
+})
