@@ -29,13 +29,16 @@ async function failed(response: Response) {
     response.headers.get('Retry-After'),
   )
 }
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const CREDENTIALS: RequestCredentials = API_BASE ? 'include' : 'same-origin'
+
 export async function csrf(): Promise<string> {
   if (token) return token
   if (pending) return pending
   const generation = epoch
   const request = (async () => {
-    const response = await fetch('/api/v1/csrf-token', {
-      credentials: 'same-origin',
+    const response = await fetch(`${API_BASE}/api/v1/csrf-token`, {
+      credentials: CREDENTIALS,
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     })
@@ -69,11 +72,11 @@ export async function api<T>(
   const multipart = body instanceof FormData
   if (body !== undefined && !multipart) headers.set('Content-Type', 'application/json')
   if (multipart) headers.delete('Content-Type')
-  const response = await fetch('/api/v1' + path, {
+  const response = await fetch(`${API_BASE}/api/v1${path}`, {
     ...init,
     method,
     headers,
-    credentials: 'same-origin',
+    credentials: CREDENTIALS,
     cache: 'no-store',
     body: body === undefined ? undefined : multipart ? body : JSON.stringify(body),
   })
@@ -89,8 +92,8 @@ export async function api<T>(
   return response.json() as Promise<T>
 }
 export async function download(path: string, filename: string) {
-  const response = await fetch('/api/v1' + path, {
-    credentials: 'same-origin',
+  const response = await fetch(`${API_BASE}/api/v1${path}`, {
+    credentials: CREDENTIALS,
     headers: { Accept: 'application/octet-stream, application/json, text/csv, */*' },
     cache: 'no-store',
   })

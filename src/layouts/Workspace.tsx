@@ -57,7 +57,12 @@ export default function Workspace() {
           { to: '/tickets?unassigned=1', text: 'Available queue', icon: Folder },
         ]
       : []),
-    { to: '/notifications', text: 'Notifications', icon: Bell },
+    {
+      to: '/notifications',
+      text: 'Notifications',
+      icon: Bell,
+      badge: unreadCount > 0 ? unreadCount : undefined,
+    },
   ]
   async function signOut() {
     setLeaving(true)
@@ -112,6 +117,11 @@ export default function Workspace() {
             >
               <l.icon size={19} />
               <span>{l.text}</span>
+              {l.badge !== undefined && (
+                <span className="badge-count ml-auto inline-flex items-center justify-center rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">
+                  {l.badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -192,8 +202,13 @@ export default function Workspace() {
               <ShieldCheck size={15} />
               Private workspace
             </span>
-            <Link to="/notifications" className="icon-link" aria-label="Notifications">
+            <Link to="/notifications" className="icon-link relative" aria-label="Notifications">
               <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Link>
             <Link to="/tickets/create" className="button primary small">
               <Plus size={17} />
