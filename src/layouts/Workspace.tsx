@@ -24,6 +24,9 @@ import { useToast } from '../providers/toast'
 import { Button } from '../components/ui'
 import { api } from '../lib/api'
 import { errorText, initials, label } from '../lib/utils'
+
+const UNREAD_POLL_MS = 60_000
+
 export default function Workspace() {
   const { user, logout } = useAuth()
   const notify = useToast()
@@ -32,28 +35,50 @@ export default function Workspace() {
   const [leaving, setLeaving] = useState(false)
   const [search, setSearch] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
+
   const fetchUnread = useCallback(() => {
     api<{ count: number }>('/notifications/unread-count')
       .then((d) => setUnreadCount(d.count))
-      .catch(() => {})
+      .catch(() => {
+        // Silently ignore – notification badge is non-critical
+      })
   }, [])
+
   useEffect(() => {
     fetchUnread()
-    const timer = setInterval(fetchUnread, 60_000)
+    const timer = setInterval(fetchUnread, UNREAD_POLL_MS)
     return () => clearInterval(timer)
   }, [fetchUnread])
+
+  // Close sidebar on Escape
+  useEffect(() => {
+    if (!mobile) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobile(false)
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [mobile])
+
+  // Prevent body scroll while mobile nav is open
+  useEffect(() => {
+    document.body.style.overflow = mobile ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [mobile])
+
   if (!user) return null
-  const links = [
+
+  const navLinks = [
     { to: '/dashboard', text: 'Overview', icon: LayoutDashboard },
     {
       to: '/tickets',
       text: user.role === 'customer' ? 'My tickets' : 'All tickets',
       icon: Ticket,
-      end: true,
+      end: true as const,
     },
     ...(user.role === 'agent'
       ? [
-          { to: '/tickets?assigned_agent_id=' + user.id, text: 'Assigned to me', icon: Users },
+          { to: `/tickets?assigned_agent_id=${user.id}`, text: 'Assigned to me', icon: Users },
           { to: '/tickets?unassigned=1', text: 'Available queue', icon: Folder },
         ]
       : []),
@@ -64,6 +89,14 @@ export default function Workspace() {
       badge: unreadCount > 0 ? unreadCount : undefined,
     },
   ]
+
+  const adminLinks = [
+    { to: '/admin/agents', text: 'Support agents', icon: Users },
+    { to: '/admin/categories', text: 'Categories', icon: Folder },
+    { to: '/admin/sla-policies', text: 'SLA & business hours', icon: Clock3 },
+    { to: '/admin/imports', text: 'Ticket imports', icon: FileUp },
+  ]
+
   async function signOut() {
     setLeaving(true)
     try {
@@ -75,16 +108,23 @@ export default function Workspace() {
       setLeaving(false)
     }
   }
+
+  function closeMobile() {
+    setMobile(false)
+  }
+
   return (
     <div className="app-shell">
+      {/* Backdrop – closes sidebar when tapped on mobile */}
       {mobile && (
         <button
           className="sidebar-backdrop"
           aria-label="Close navigation"
-          onClick={() => setMobile(false)}
+          onClick={closeMobile}
         />
       )}
-      <aside className={'sidebar ' + (mobile ? 'is-open' : '')}>
+
+      <aside className={`sidebar${mobile ? ' is-open' : ''}`} aria-label="Primary navigation">
         <Link to="/dashboard" className="brand">
           <span className="brand-symbol">
             <MessageSquare size={22} />
@@ -94,68 +134,68 @@ export default function Workspace() {
             <small>MAKE EVERY REPLY COUNT</small>
           </span>
         </Link>
-        <button className="mobile-close" aria-label="Close menu" onClick={() => setMobile(false)}>
+
+        <button className="mobile-close" aria-label="Close menu" onClick={closeMobile}>
           <X size={20} />
         </button>
+
         <div className="workspace-switch">
           <span className="workspace-mark">S</span>
           <div>
             <strong>Support workspace</strong>
             <small>{label(user.role)} access</small>
           </div>
-          <ChevronRight size={16} />
+          <ChevronRight size={16} aria-hidden="true" />
         </div>
+
         <div className="nav-label">WORKSPACE</div>
         <nav aria-label="Main navigation">
-          {links.map((l) => (
+          {navLinks.map((l) => (
             <NavLink
               key={l.text}
               to={l.to}
               end={l.end}
-              onClick={() => setMobile(false)}
-              className={({ isActive }) => 'nav-link ' + (isActive ? 'active' : '')}
+              onClick={closeMobile}
+              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
-              <l.icon size={19} />
+              <l.icon size={19} aria-hidden="true" />
               <span>{l.text}</span>
               {l.badge !== undefined && (
-                <span className="badge-count ml-auto inline-flex items-center justify-center rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">
-                  {l.badge}
+                <span className="nav-badge" aria-label={`${l.badge} unread`}>
+                  {l.badge > 99 ? '99+' : l.badge}
                 </span>
               )}
             </NavLink>
           ))}
         </nav>
+
         {user.role === 'admin' && (
           <>
             <div className="nav-label">ADMINISTRATION</div>
             <nav aria-label="Administration">
-              {[
-                { to: '/admin/agents', text: 'Support agents', icon: Users },
-                { to: '/admin/categories', text: 'Categories', icon: Folder },
-                { to: '/admin/sla-policies', text: 'SLA & business hours', icon: Clock3 },
-                { to: '/admin/imports', text: 'Ticket imports', icon: FileUp },
-              ].map((l) => (
+              {adminLinks.map((l) => (
                 <NavLink
                   key={l.to}
                   to={l.to}
-                  onClick={() => setMobile(false)}
-                  className={({ isActive }) => 'nav-link ' + (isActive ? 'active' : '')}
+                  onClick={closeMobile}
+                  className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
                 >
-                  <l.icon size={19} />
+                  <l.icon size={19} aria-hidden="true" />
                   <span>{l.text}</span>
                 </NavLink>
               ))}
             </nav>
           </>
         )}
+
         <div className="sidebar-bottom">
           <div className="sidebar-tip">
-            <LifeBuoy size={21} />
+            <LifeBuoy size={21} aria-hidden="true" />
             <strong>A little clarity goes a long way.</strong>
             <p>Keep conversations in one place. Give every customer a clear next step.</p>
           </div>
           <div className="profile">
-            <span className="avatar">{initials(user.name)}</span>
+            <span className="avatar" aria-hidden="true">{initials(user.name)}</span>
             <div>
               <strong>{user.name}</strong>
               <small>{label(user.role)}</small>
@@ -166,6 +206,7 @@ export default function Workspace() {
           </div>
         </div>
       </aside>
+
       <div className="main-shell">
         <header className="topbar">
           <div className="topbar-left">
@@ -173,22 +214,25 @@ export default function Workspace() {
               variant="ghost"
               className="mobile-menu"
               aria-label="Open navigation"
+              aria-expanded={mobile}
               onClick={() => setMobile(true)}
             >
               <Menu size={21} />
             </Button>
-            <span className="topbar-crumb">
+            <span className="topbar-crumb" aria-hidden="true">
               Workspace <ChevronRight size={13} /> <strong>Support center</strong>
             </span>
           </div>
+
           <form
             className="global-search"
+            role="search"
             onSubmit={(e) => {
               e.preventDefault()
-              navigate('/tickets?q=' + encodeURIComponent(search))
+              if (search.trim()) navigate(`/tickets?q=${encodeURIComponent(search.trim())}`)
             }}
           >
-            <Search size={16} />
+            <Search size={16} aria-hidden="true" />
             <input
               aria-label="Search all permitted tickets"
               placeholder="Search tickets…"
@@ -197,15 +241,21 @@ export default function Workspace() {
             />
             <kbd>↵</kbd>
           </form>
+
           <div className="topbar-right">
             <span className="secure-label">
-              <ShieldCheck size={15} />
+              <ShieldCheck size={15} aria-hidden="true" />
               Private workspace
             </span>
-            <Link to="/notifications" className="icon-link relative" aria-label="Notifications">
+            <Link
+              to="/notifications"
+              className="icon-link"
+              aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
+              style={{ position: 'relative' }}
+            >
               <Bell size={20} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-bold text-white">
+                <span className="topbar-badge" aria-hidden="true">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -216,12 +266,14 @@ export default function Workspace() {
             </Link>
           </div>
         </header>
+
         <main className="page-content">
-          <Outlet key={user.id + ':' + user.role} />
+          <Outlet key={`${user.id}:${user.role}`} />
         </main>
+
         <footer className="workspace-footer">
           <span>
-            <Settings2 size={13} />
+            <Settings2 size={13} aria-hidden="true" />
             Support Desk · {label(user.role)} workspace
           </span>
           <span>Times shown in Asia/Dhaka</span>

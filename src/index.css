@@ -493,6 +493,46 @@ legend {
   display: grid;
   place-items: center;
   color: #5d7664;
+  position: relative;
+}
+/* Sidebar nav badge (unread count) */
+.nav-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #174a40;
+  color: #e6f2bc;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+.nav-link.active .nav-badge {
+  background: #26463a;
+  color: #e6f2bc;
+}
+/* Topbar bell badge */
+.topbar-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #174a40;
+  color: #e6f2bc;
+  font-size: 9px;
+  font-weight: 700;
+  border: 2px solid #fcfdfb;
+  pointer-events: none;
 }
 .page-content {
   padding: 36px;
