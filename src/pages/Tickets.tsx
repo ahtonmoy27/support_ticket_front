@@ -39,14 +39,20 @@ export default function Tickets() {
     }, 350)
     return () => clearTimeout(timer)
   }, [search, urlQuery, setParams])
-  function filter(key: string, value: string) {
+  function filters(values: Record<string, string>) {
     setParams((previous) => {
       const next = new URLSearchParams(previous)
-      if (value) next.set(key, value)
-      else next.delete(key)
-      if (key !== 'page' && key !== 'agent_page') next.delete('page')
+      for (const [key, value] of Object.entries(values)) {
+        if (value) next.set(key, value)
+        else next.delete(key)
+      }
+      if (Object.keys(values).some((key) => key !== 'page' && key !== 'agent_page'))
+        next.delete('page')
       return next
     })
+  }
+  function filter(key: string, value: string) {
+    filters({ [key]: value })
   }
   const page = result.data ? pageOf(result.data) : null
   return (
@@ -68,8 +74,7 @@ export default function Tickets() {
               !params.get('assigned_agent_id') && !params.get('unassigned') ? 'selected' : ''
             }
             onClick={() => {
-              filter('assigned_agent_id', '')
-              filter('unassigned', '')
+              filters({ assigned_agent_id: '', unassigned: '' })
             }}
           >
             {user?.role === 'customer' ? 'My requests' : 'All permitted tickets'}
@@ -78,8 +83,7 @@ export default function Tickets() {
             <button
               className={params.get('assigned_agent_id') ? 'selected' : ''}
               onClick={() => {
-                filter('unassigned', '')
-                filter('assigned_agent_id', String(user.id))
+                filters({ unassigned: '', assigned_agent_id: String(user.id) })
               }}
             >
               Assigned to me
@@ -89,8 +93,7 @@ export default function Tickets() {
             <button
               className={params.get('unassigned') ? 'selected' : ''}
               onClick={() => {
-                filter('assigned_agent_id', '')
-                filter('unassigned', '1')
+                filters({ assigned_agent_id: '', unassigned: '1' })
               }}
             >
               Unassigned queue

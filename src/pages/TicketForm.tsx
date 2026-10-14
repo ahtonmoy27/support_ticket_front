@@ -29,6 +29,7 @@ function TicketEditor({ ticket }: { ticket?: Ticket }) {
     customer_id: '',
   })
   const [files, setFiles] = useState<File[]>([])
+  const [savedTicket, setSavedTicket] = useState<Ticket | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   const allowed = ticket ? permissions(user!, ticket) : null
@@ -53,26 +54,29 @@ function TicketEditor({ ticket }: { ticket?: Ticket }) {
         body.category_id = Number(form.category_id)
         if (user?.role === 'admin' && form.customer_id) body.customer_id = Number(form.customer_id)
       }
-      const result = await api<{ data: Ticket }>(ticket ? '/tickets/' + ticket.id : '/tickets', {
-        method: ticket ? 'PATCH' : 'POST',
-        body,
-      })
+      const result = savedTicket
+        ? { data: savedTicket }
+        : await api<{ data: Ticket }>(ticket ? '/tickets/' + ticket.id : '/tickets', {
+            method: ticket ? 'PATCH' : 'POST',
+            body,
+          })
+      setSavedTicket(result.data)
       const failures: string[] = []
+      const pendingFiles: File[] = []
       for (const file of files) {
         try {
           await upload(result.data.id, file)
         } catch (err) {
           failures.push(file.name + ': ' + errorText(err))
+          pendingFiles.push(file)
         }
       }
+      if (failures.length) {
+        setFiles(pendingFiles)
+        setError(new Error('Ticket saved. Retry failed files: ' + failures.join('; ')))
+        return
+      }
       toast(ticket ? 'Ticket updated.' : 'Ticket ' + result.data.ticket_number + ' created.')
-      if (failures.length)
-        toast(
-          'Ticket saved. Upload failed: ' +
-            failures.join('; ') +
-            '. Retry files on the ticket page.',
-          'error',
-        )
       navigate('/tickets/' + result.data.id)
     } catch (err) {
       setError(err)
@@ -91,113 +95,124 @@ function TicketEditor({ ticket }: { ticket?: Ticket }) {
       <div className="form-layout">
         <section className="panel form-panel">
           <form onSubmit={submit}>
+            {savedTicket && (
+              <p role="status">
+                Ticket {savedTicket.ticket_number} saved. Retry the remaining files, or{' '}
+                <Link to={'/tickets/' + savedTicket.id}>open the ticket</Link>.
+              </p>
+            )}
             <FormErrors error={error} />
-            <Field label="Subject">
-              <input
-                placeholder="A short summary of your request"
-                required
-                maxLength={255}
-                value={form.subject}
-                onChange={(e) => change('subject', e.target.value)}
-              />
-            </Field>
-            <Field
-              label="Description"
-              hint="Include what happened, what you expected, and any steps already tried."
+            <fieldset
+              disabled={busy || !!savedTicket}
+              style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
             >
-              <textarea
-                required
-                maxLength={50000}
-                rows={8}
-                placeholder="Tell us a little more…"
-                value={form.description}
-                onChange={(e) => change('description', e.target.value)}
-              />
-            </Field>
-            <div className="form-grid">
-              {!ticket && (
-                <Field label="Category">
-                  {categories.loading ? (
-                    <span>Loading categories…</span>
-                  ) : categories.error ? (
-                    <span className="field-error">
-                      {errorText(categories.error)}{' '}
-                      <button type="button" onClick={categories.refresh}>
-                        Retry
-                      </button>
-                    </span>
-                  ) : (
-                    <select
-                      required
-                      value={form.category_id}
-                      onChange={(e) => change('category_id', e.target.value)}
-                    >
-                      <option value="">Choose a category</option>
-                      {categories.data?.data
-                        .filter((c) => c.is_active)
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                    </select>
-                  )}
-                </Field>
-              )}
-              {(!ticket || allowed?.priority) && (
-                <Field label="Priority">
-                  <select
-                    value={form.priority}
-                    onChange={(e) => change('priority', e.target.value)}
-                  >
-                    {priorities.map((p) => (
-                      <option key={p} value={p}>
-                        {label(p)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              )}
-            </div>
-            {!ticket && user?.role === 'admin' && (
-              <Field
-                label="Create for customer ID (optional)"
-                hint="Leave blank to create for yourself. Requires an existing active customer."
-              >
+              <Field label="Subject">
                 <input
-                  type="number"
-                  min="1"
-                  value={form.customer_id}
-                  onChange={(e) => change('customer_id', e.target.value)}
+                  placeholder="A short summary of your request"
+                  required
+                  maxLength={255}
+                  value={form.subject}
+                  onChange={(e) => change('subject', e.target.value)}
                 />
               </Field>
-            )}
-            {!ticket && (
               <Field
-                label="Attachments (optional)"
-                hint="PDF, PNG, JPEG, TXT, DOCX · up to 10 MB each. Uploaded after the ticket is saved."
+                label="Description"
+                hint="Include what happened, what you expected, and any steps already tried."
               >
-                <span className="upload-zone">
-                  <Paperclip size={20} />
-                  <span>Choose supporting files</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
-                    onChange={(e) => setFiles(Array.from(e.target.files || []))}
-                  />
-                </span>
-                {files.map((f) => (
-                  <small key={f.name}>{f.name}</small>
-                ))}
+                <textarea
+                  required
+                  maxLength={50000}
+                  rows={8}
+                  placeholder="Tell us a little more…"
+                  value={form.description}
+                  onChange={(e) => change('description', e.target.value)}
+                />
               </Field>
-            )}
+              <div className="form-grid">
+                {!ticket && (
+                  <Field label="Category">
+                    {categories.loading ? (
+                      <span>Loading categories…</span>
+                    ) : categories.error ? (
+                      <span className="field-error">
+                        {errorText(categories.error)}{' '}
+                        <button type="button" onClick={categories.refresh}>
+                          Retry
+                        </button>
+                      </span>
+                    ) : (
+                      <select
+                        required
+                        value={form.category_id}
+                        onChange={(e) => change('category_id', e.target.value)}
+                      >
+                        <option value="">Choose a category</option>
+                        {categories.data?.data
+                          .filter((c) => c.is_active)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                      </select>
+                    )}
+                  </Field>
+                )}
+                {(!ticket || allowed?.priority) && (
+                  <Field label="Priority">
+                    <select
+                      value={form.priority}
+                      onChange={(e) => change('priority', e.target.value)}
+                    >
+                      {priorities.map((p) => (
+                        <option key={p} value={p}>
+                          {label(p)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+              </div>
+              {!ticket && user?.role === 'admin' && (
+                <Field
+                  label="Create for customer ID (optional)"
+                  hint="Leave blank to create for yourself. Requires an existing active customer."
+                >
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.customer_id}
+                    onChange={(e) => change('customer_id', e.target.value)}
+                  />
+                </Field>
+              )}
+              {!ticket && (
+                <Field
+                  label="Attachments (optional)"
+                  hint="PDF, PNG, JPEG, TXT, DOCX · up to 10 MB each. Uploaded after the ticket is saved."
+                >
+                  <span className="upload-zone">
+                    <Paperclip size={20} />
+                    <span>Choose supporting files</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
+                      onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                    />
+                  </span>
+                  {files.map((f) => (
+                    <small key={f.name}>{f.name}</small>
+                  ))}
+                </Field>
+              )}
+            </fieldset>
             <div className="form-actions">
               <Link className="button secondary" to={ticket ? '/tickets/' + ticket.id : '/tickets'}>
                 Cancel
               </Link>
               <Button busy={busy} type="submit">
-                {ticket ? 'Save changes' : 'Create ticket'}
+                {savedTicket ? 'Retry attachments' : ticket ? 'Save changes' : 'Create ticket'}
                 <ArrowRight size={16} />
               </Button>
             </div>

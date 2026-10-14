@@ -147,6 +147,16 @@ describe('utils', () => {
     const adminPerm = permissions(adminUser, openTicket)
     expect(adminPerm.assign).toBe(true)
     expect(adminPerm.claim).toBe(true)
+    for (const actor of [customerUser, agentUser, adminUser]) {
+      const inactive = { ...actor, is_active: false }
+      for (const status of ['open', 'resolved'] as const) {
+        expect(
+          Object.values(
+            permissions(inactive, { ...openTicket, status, assigned_agent_id: actor.id }),
+          ).every((allowed) => !allowed),
+        ).toBe(true)
+      }
+    }
 
     // Resolved ticket permissions
     const resolvedTicket: Ticket = {

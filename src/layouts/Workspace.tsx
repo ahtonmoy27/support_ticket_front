@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
   ChevronRight,
@@ -28,6 +28,14 @@ export default function Workspace() {
   const { user, logout } = useAuth()
   const notify = useToast()
   const navigate = useNavigate()
+  const location = useLocation()
+  const query = new URLSearchParams(location.search)
+  function matchesScope(to: string) {
+    if (to === '/tickets') return !query.get('assigned_agent_id') && !query.get('unassigned')
+    return [...new URLSearchParams(to.split('?')[1])].every(
+      ([key, value]) => query.get(key) === value,
+    )
+  }
   const [mobile, setMobile] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [search, setSearch] = useState('')
@@ -40,7 +48,11 @@ export default function Workspace() {
   useEffect(() => {
     fetchUnread()
     const timer = setInterval(fetchUnread, 60_000)
-    return () => clearInterval(timer)
+    window.addEventListener('desk:notifications-changed', fetchUnread)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('desk:notifications-changed', fetchUnread)
+    }
   }, [fetchUnread])
   if (!user) return null
   const links = [
@@ -108,7 +120,10 @@ export default function Workspace() {
               to={l.to}
               end={l.end}
               onClick={() => setMobile(false)}
-              className={({ isActive }) => 'nav-link ' + (isActive ? 'active' : '')}
+              aria-current={matchesScope(l.to) ? undefined : false}
+              className={({ isActive }) =>
+                'nav-link ' + (isActive && matchesScope(l.to) ? 'active' : '')
+              }
             >
               <l.icon size={19} />
               <span>{l.text}</span>
@@ -192,8 +207,17 @@ export default function Workspace() {
               <ShieldCheck size={15} />
               Private workspace
             </span>
-            <Link to="/notifications" className="icon-link" aria-label="Notifications">
+            <Link
+              to="/notifications"
+              className="icon-link"
+              aria-label={'Notifications, ' + unreadCount + ' unread'}
+            >
               <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="notification-count" aria-hidden="true">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Link>
             <Link to="/tickets/create" className="button primary small">
               <Plus size={17} />

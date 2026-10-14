@@ -490,6 +490,7 @@ legend {
   color: #8b9b8e;
 }
 .icon-link {
+  position: relative;
   display: grid;
   place-items: center;
   color: #5d7664;
@@ -2505,4 +2506,18 @@ tbody tr:hover {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.notification-count {
+  position: absolute;
+  top: -9px;
+  right: -12px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: #b42318;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
 }

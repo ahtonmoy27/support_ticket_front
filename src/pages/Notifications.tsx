@@ -17,6 +17,7 @@ export default function Notifications() {
     try {
       await api('/notifications/' + id + '/read', { method: 'PATCH' })
       result.refresh()
+      window.dispatchEvent(new Event('desk:notifications-changed'))
     } catch (err) {
       notify(errorText(err), 'error')
     } finally {

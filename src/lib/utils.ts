@@ -30,9 +30,9 @@ export function initials(name: string) {
 }
 export function permissions(user: User, ticket: Ticket) {
   const active = ['open', 'in_progress', 'waiting_for_customer'].includes(ticket.status)
-  const admin = user.role === 'admin'
-  const assigned = user.role === 'agent' && ticket.assigned_agent_id === user.id
-  const owner = user.role === 'customer' && ticket.customer_id === user.id
+  const admin = user.is_active && user.role === 'admin'
+  const assigned = user.is_active && user.role === 'agent' && ticket.assigned_agent_id === user.id
+  const owner = user.is_active && user.role === 'customer' && ticket.customer_id === user.id
   return {
     edit: user.is_active && active && (admin || assigned || owner),
     priority: active && (admin || assigned),

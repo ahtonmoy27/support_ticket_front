@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { User } from '../types'
-import { api, ApiError, clearCsrf, refreshCsrf } from '../lib/api'
+import { api, ApiError, clearCsrf } from '../lib/api'
 type Auth = {
   user: User | null
   loading: boolean
@@ -47,9 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
   async function authenticate(path: string, body: unknown) {
     const r = await api<{ data: User }>(path, { method: 'POST', body })
+    clearCsrf()
     setUser(r.data)
     setError(null)
-    await refreshCsrf()
   }
   async function logout() {
     await api('/logout', { method: 'POST' })

@@ -41,7 +41,8 @@ export async function csrf(): Promise<string> {
     })
     if (!response.ok) throw await failed(response)
     const data = await response.json()
-    if (!data.csrf_token) throw new Error('Invalid CSRF response. Check the backend proxy.')
+    if (typeof data.csrf_token !== 'string' || !data.csrf_token)
+      throw new Error('Invalid CSRF response. Check the backend proxy.')
     if (generation === epoch) token = data.csrf_token
     return data.csrf_token as string
   })()
