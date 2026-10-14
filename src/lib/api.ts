@@ -14,7 +14,7 @@ let token: string | null = null
 let pending: Promise<string> | null = null
 let epoch = 0
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined ?? '').replace(/\/$/, '')
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 const CREDENTIALS: RequestCredentials = API_BASE ? 'include' : 'same-origin'
 
 export function clearCsrf() {
@@ -98,11 +98,16 @@ export async function api<T>(
   return response.json() as Promise<T>
 }
 
-export async function download(path: string, filename: string): Promise<void> {
+export async function download(
+  path: string,
+  filename: string,
+  signal?: AbortSignal,
+): Promise<void> {
   const response = await fetch(`${API_BASE}/api/v1${path}`, {
     credentials: CREDENTIALS,
     headers: { Accept: 'application/octet-stream, application/json, text/csv, */*' },
     cache: 'no-store',
+    signal,
   })
   if (!response.ok) throw await failed(response)
   if (
@@ -120,9 +125,14 @@ export async function download(path: string, filename: string): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export async function upload(ticketId: number, file: File, messageId?: number): Promise<unknown> {
+export async function upload(
+  ticketId: number,
+  file: File,
+  messageId?: number,
+  signal?: AbortSignal,
+): Promise<unknown> {
   const form = new FormData()
   form.append('file', file)
   if (messageId !== undefined) form.append('ticket_message_id', String(messageId))
-  return api('/tickets/' + ticketId + '/attachments', { method: 'POST', body: form })
+  return api('/tickets/' + ticketId + '/attachments', { method: 'POST', body: form, signal })
 }

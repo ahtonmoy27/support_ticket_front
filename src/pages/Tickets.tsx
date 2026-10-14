@@ -3,11 +3,21 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Filter, Plus, Search, X } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { useResource } from '../hooks/useResource'
-import { Empty, ErrorState, Loading, PageHeader, Pagination, TicketTable } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import {
+  Empty,
+  ErrorState,
+  PageHeader,
+  Pagination,
+  TableSkeleton,
+  TicketTable,
+} from '../components/ui'
 import { label, pageOf } from '../lib/utils'
 import type { ApiPage, Category, Ticket, User } from '../types'
 import { priorities, statuses } from '../types'
+
 export default function Tickets() {
+  useDocumentTitle('Tickets')
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState(params.get('q') || '')
@@ -271,7 +281,7 @@ export default function Tickets() {
           </div>
         )}
         {result.loading ? (
-          <Loading label="Finding your tickets…" />
+          <TableSkeleton rows={8} cols={5} />
         ) : result.error ? (
           <ErrorState error={result.error} retry={result.refresh} />
         ) : page && page.items.length ? (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { useToast } from '../providers/toast'
-import { Button } from '../components/ui'
+import { Button, PageSkeleton } from '../components/ui'
 import { api } from '../lib/api'
 import { errorText, initials, label } from '../lib/utils'
 
@@ -66,38 +66,50 @@ export default function Workspace() {
     return () => { document.body.style.overflow = '' }
   }, [mobile])
 
-  if (!user) return null
+  const closeMobile = useCallback(() => {
+    setMobile(false)
+  }, [])
 
-  const navLinks = [
-    { to: '/dashboard', text: 'Overview', icon: LayoutDashboard },
-    {
-      to: '/tickets',
-      text: user.role === 'customer' ? 'My tickets' : 'All tickets',
-      icon: Ticket,
-      end: true as const,
-    },
-    ...(user.role === 'agent'
-      ? [
-          { to: `/tickets?assigned_agent_id=${user.id}`, text: 'Assigned to me', icon: Users },
-          { to: '/tickets?unassigned=1', text: 'Available queue', icon: Folder },
-        ]
-      : []),
-    {
-      to: '/notifications',
-      text: 'Notifications',
-      icon: Bell,
-      badge: unreadCount > 0 ? unreadCount : undefined,
-    },
-  ]
+  const openMobile = useCallback(() => {
+    setMobile(true)
+  }, [])
 
-  const adminLinks = [
-    { to: '/admin/agents', text: 'Support agents', icon: Users },
-    { to: '/admin/categories', text: 'Categories', icon: Folder },
-    { to: '/admin/sla-policies', text: 'SLA & business hours', icon: Clock3 },
-    { to: '/admin/imports', text: 'Ticket imports', icon: FileUp },
-  ]
+  const navLinks = useMemo(
+    () => [
+      { to: '/dashboard', text: 'Overview', icon: LayoutDashboard },
+      {
+        to: '/tickets',
+        text: user?.role === 'customer' ? 'My tickets' : 'All tickets',
+        icon: Ticket,
+        end: true as const,
+      },
+      ...(user?.role === 'agent'
+        ? [
+            { to: `/tickets?assigned_agent_id=${user.id}`, text: 'Assigned to me', icon: Users },
+            { to: '/tickets?unassigned=1', text: 'Available queue', icon: Folder },
+          ]
+        : []),
+      {
+        to: '/notifications',
+        text: 'Notifications',
+        icon: Bell,
+        badge: unreadCount > 0 ? unreadCount : undefined,
+      },
+    ],
+    [user?.role, user?.id, unreadCount],
+  )
 
-  async function signOut() {
+  const adminLinks = useMemo(
+    () => [
+      { to: '/admin/agents', text: 'Support agents', icon: Users },
+      { to: '/admin/categories', text: 'Categories', icon: Folder },
+      { to: '/admin/sla-policies', text: 'SLA & business hours', icon: Clock3 },
+      { to: '/admin/imports', text: 'Ticket imports', icon: FileUp },
+    ],
+    [],
+  )
+
+  const signOut = useCallback(async () => {
     setLeaving(true)
     try {
       await logout()
@@ -107,11 +119,17 @@ export default function Workspace() {
     } finally {
       setLeaving(false)
     }
-  }
+  }, [logout, navigate, notify])
 
-  function closeMobile() {
-    setMobile(false)
-  }
+  const handleSearchSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      if (search.trim()) navigate(`/tickets?q=${encodeURIComponent(search.trim())}`)
+    },
+    [search, navigate],
+  )
+
+  if (!user) return null
 
   return (
     <div className="app-shell">
@@ -215,7 +233,7 @@ export default function Workspace() {
               className="mobile-menu"
               aria-label="Open navigation"
               aria-expanded={mobile}
-              onClick={() => setMobile(true)}
+              onClick={openMobile}
             >
               <Menu size={21} />
             </Button>
@@ -224,14 +242,7 @@ export default function Workspace() {
             </span>
           </div>
 
-          <form
-            className="global-search"
-            role="search"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (search.trim()) navigate(`/tickets?q=${encodeURIComponent(search.trim())}`)
-            }}
-          >
+          <form className="global-search" role="search" onSubmit={handleSearchSubmit}>
             <Search size={16} aria-hidden="true" />
             <input
               aria-label="Search all permitted tickets"
@@ -268,7 +279,9 @@ export default function Workspace() {
         </header>
 
         <main className="page-content">
-          <Outlet key={`${user.id}:${user.role}`} />
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet key={`${user.id}:${user.role}`} />
+          </Suspense>
         </main>
 
         <footer className="workspace-footer">

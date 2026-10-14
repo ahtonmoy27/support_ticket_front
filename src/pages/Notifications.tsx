@@ -5,9 +5,12 @@ import { useResource } from '../hooks/useResource'
 import { useToast } from '../providers/toast'
 import { api } from '../lib/api'
 import { date, errorText, label, pageOf } from '../lib/utils'
-import { Button, Empty, ErrorState, Loading, PageHeader, Pagination } from '../components/ui'
+import { Button, Empty, ErrorState, PageHeader, Pagination, TableSkeleton } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { ApiPage, DeskNotification } from '../types'
+
 export default function Notifications() {
+  useDocumentTitle('Notifications')
   const [page, setPage] = useState(1)
   const result = useResource<ApiPage<DeskNotification>>('/notifications?page=' + page, 60000)
   const notify = useToast()
@@ -31,7 +34,7 @@ export default function Notifications() {
       />
       <section className="panel">
         {result.loading ? (
-          <Loading />
+          <TableSkeleton rows={4} cols={3} />
         ) : result.error ? (
           <ErrorState error={result.error} retry={result.refresh} />
         ) : (

@@ -15,13 +15,19 @@ import {
   Loading,
   Modal,
   PageHeader,
+  PageSkeleton,
   Pagination,
 } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { Activity, ApiPage, Attachment, Message, Ticket, User } from '../types'
+
 export default function TicketDetail() {
   const { id } = useParams()
   const r = useResource<{ data: Ticket }>('/tickets/' + id, 60000)
-  if (r.loading && !r.data) return <Loading />
+  const ticket = r.data?.data
+  useDocumentTitle(ticket ? `#${ticket.ticket_number} · ${ticket.subject}` : 'Ticket Details')
+
+  if (r.loading && !r.data) return <PageSkeleton title="Loading ticket details..." />
   if (r.error) return <ErrorState error={r.error} retry={r.refresh} />
   return r.data ? <Detail key={id} ticket={r.data.data} refresh={r.refresh} /> : null
 }

@@ -7,17 +7,21 @@ import { initials, pageOf } from '../lib/utils'
 import {
   Badge,
   Button,
+  CardSkeleton,
   Empty,
   ErrorState,
   Field,
   FormErrors,
-  Loading,
   Modal,
   PageHeader,
   Pagination,
+  TableSkeleton,
 } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { ApiPage, Category, User } from '../types'
+
 export function Categories() {
+  useDocumentTitle('Categories')
   const r = useResource<{ data: Category[] }>('/categories')
   const [selected, setSelected] = useState<Category | 'new' | null>(null)
   return (
@@ -35,7 +39,7 @@ export function Categories() {
       />
       <section className="panel">
         {r.loading ? (
-          <Loading />
+          <CardSkeleton count={4} />
         ) : r.error ? (
           <ErrorState error={r.error} retry={r.refresh} />
         ) : (
@@ -137,6 +141,7 @@ function CategoryEditor({
   )
 }
 export function Agents() {
+  useDocumentTitle('Support Agents')
   const [page, setPage] = useState(1)
   const r = useResource<ApiPage<User>>('/admin/agents?page=' + page)
   const categories = useResource<{ data: Category[] }>('/categories')
@@ -156,7 +161,7 @@ export function Agents() {
       />
       <section className="panel">
         {r.loading ? (
-          <Loading />
+          <TableSkeleton rows={5} cols={5} />
         ) : r.error ? (
           <ErrorState error={r.error} retry={r.refresh} />
         ) : (
