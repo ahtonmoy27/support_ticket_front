@@ -22,6 +22,8 @@ export interface Ticket {
   description: string
   priority: Priority
   status: Status
+  created_by: number
+  creator?: Named
   customer_id: number
   assigned_agent_id: number | null
   category_id: number

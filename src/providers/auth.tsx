@@ -10,33 +10,42 @@ type Auth = {
   authenticate: (path: string, body: unknown) => Promise<void>
   logout: () => Promise<void>
 }
+
 const Context = createContext<Auth | null>(null)
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [revision, setRevision] = useState(0)
+
+  // Bootstrap: resolve the current session once (and on manual retry)
   useEffect(() => {
-    const c = new AbortController()
-    api<{ data: User }>('/me', { signal: c.signal })
+    const controller = new AbortController()
+    api<{ data: User }>('/me', { signal: controller.signal })
       .then((r) => {
-        if (!c.signal.aborted) {
+        if (!controller.signal.aborted) {
           setUser(r.data)
           setError(null)
           setLoading(false)
         }
       })
-      .catch((e) => {
-        if (!c.signal.aborted) {
+      .catch((e: unknown) => {
+        if (!controller.signal.aborted) {
+          // A 401 simply means the user is not authenticated; that is not an error
           if (e instanceof ApiError && e.status === 401) {
             setUser(null)
             setError(null)
-          } else setError(e)
+          } else {
+            setError(e)
+          }
           setLoading(false)
         }
       })
-    return () => c.abort()
+    return () => controller.abort()
   }, [revision])
+
+  // Global logout signal dispatched by api.ts when the server returns 401
   useEffect(() => {
     const handler = () => {
       setUser(null)
@@ -45,17 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('desk:unauthorized', handler)
     return () => window.removeEventListener('desk:unauthorized', handler)
   }, [])
-  async function authenticate(path: string, body: unknown) {
+
+  async function authenticate(path: string, body: unknown): Promise<void> {
     const r = await api<{ data: User }>(path, { method: 'POST', body })
     clearCsrf()
     setUser(r.data)
     setError(null)
   }
-  async function logout() {
+
+  async function logout(): Promise<void> {
     await api('/logout', { method: 'POST' })
     setUser(null)
     clearCsrf()
   }
+
   return (
     <Context.Provider
       value={{
@@ -74,8 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </Context.Provider>
   )
 }
-export function useAuth() {
+
+export function useAuth(): Auth {
   const value = useContext(Context)
-  if (!value) throw new Error('Auth provider missing.')
+  if (!value) throw new Error('useAuth must be used inside <AuthProvider>.')
   return value
 }

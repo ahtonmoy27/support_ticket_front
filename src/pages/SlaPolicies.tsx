@@ -7,21 +7,25 @@ import { pageOf } from '../lib/utils'
 import {
   Badge,
   Button,
+  CardSkeleton,
   ErrorState,
   Field,
   FormErrors,
-  Loading,
   Modal,
   PageHeader,
   Pagination,
 } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { ApiPage, Hours, Policy, Rule } from '../types'
 import { priorities } from '../types'
+
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const defaultHours: Hours = Object.fromEntries(
   days.map((_, i) => [String(i), i < 5 ? [['09:00', '18:00']] : []]),
 )
+
 export default function SlaPolicies() {
+  useDocumentTitle('SLA Policies')
   const [page, setPage] = useState(1)
   const r = useResource<ApiPage<Policy>>('/admin/sla-policies?page=' + page)
   const [template, setTemplate] = useState<Policy | 'new' | null>(null)
@@ -46,7 +50,7 @@ export default function SlaPolicies() {
         </span>
       </div>
       {r.loading ? (
-        <Loading />
+        <CardSkeleton count={2} />
       ) : r.error ? (
         <ErrorState error={r.error} retry={r.refresh} />
       ) : (

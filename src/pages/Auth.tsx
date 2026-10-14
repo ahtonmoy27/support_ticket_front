@@ -3,7 +3,10 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, Eye, EyeOff, MessageSquare, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { Button, Field, FormErrors } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
+
 export default function AuthPage({ register = false }: { register?: boolean }) {
+  useDocumentTitle(register ? 'Create Account' : 'Sign In')
   const auth = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

@@ -6,13 +6,16 @@ import { useToast } from '../providers/toast'
 import { useResource } from '../hooks/useResource'
 import { api, upload } from '../lib/api'
 import { errorText, label, permissions, validateFiles } from '../lib/utils'
-import { Button, ErrorState, Field, FormErrors, Loading, PageHeader } from '../components/ui'
+import { Button, ErrorState, Field, FormErrors, PageHeader, PageSkeleton } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { Category, Ticket } from '../types'
 import { priorities } from '../types'
+
 export default function TicketFormPage() {
   const { id } = useParams()
+  useDocumentTitle(id ? 'Edit Ticket' : 'Create Ticket')
   const ticket = useResource<{ data: Ticket }>(id ? '/tickets/' + id : null)
-  if (id && ticket.loading) return <Loading />
+  if (id && ticket.loading) return <PageSkeleton title="Loading ticket..." />
   if (id && ticket.error) return <ErrorState error={ticket.error} retry={ticket.refresh} />
   return <TicketEditor key={id || 'create'} ticket={ticket.data?.data} />
 }

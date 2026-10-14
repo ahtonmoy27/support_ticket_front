@@ -13,19 +13,23 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { useResource } from '../hooks/useResource'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import {
   Badge,
   Button,
+  CardSkeleton,
   Empty,
   ErrorState,
-  Loading,
   PageHeader,
+  TableSkeleton,
   TicketTable,
 } from '../components/ui'
 import { label, pageOf } from '../lib/utils'
 import type { ApiPage, Metrics, Ticket as TicketType } from '../types'
 import { priorities, statuses } from '../types'
+
 export default function Dashboard() {
+  useDocumentTitle('Dashboard')
   const { user } = useAuth()
   const metrics = useResource<{ data: Metrics }>('/dashboard', 45000)
   const tickets = useResource<ApiPage<TicketType>>('/tickets?per_page=5')
@@ -117,7 +121,7 @@ export default function Dashboard() {
         </div>
       </section>
       {metrics.loading ? (
-        <Loading label="Loading support metrics…" />
+        <CardSkeleton count={4} />
       ) : metrics.error ? (
         <ErrorState error={metrics.error} retry={metrics.refresh} />
       ) : (
@@ -208,7 +212,7 @@ export default function Dashboard() {
           </Link>
         </div>
         {tickets.loading ? (
-          <Loading />
+          <TableSkeleton rows={5} cols={4} />
         ) : tickets.error ? (
           <ErrorState error={tickets.error} retry={tickets.refresh} />
         ) : tickets.data && pageOf(tickets.data).items.length ? (

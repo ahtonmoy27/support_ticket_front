@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -14,39 +14,47 @@ import {
 import { ApiError } from '../lib/api'
 import { date, errorText, label } from '../lib/utils'
 import type { Page, Ticket } from '../types'
+
+// ─── Button ──────────────────────────────────────────────────────────────────
+
 export function Button({
   children,
   variant = 'primary',
   busy,
+  className = '',
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string; busy?: boolean }) {
   return (
     <button
       {...props}
       disabled={props.disabled || busy}
-      className={'button ' + variant + ' ' + (props.className || '')}
+      className={`button ${variant} ${className}`.trim()}
     >
-      {busy && <LoaderCircle className="spin" size={16} />}
+      {busy && <LoaderCircle className="spin" size={16} aria-hidden="true" />}
       {children}
     </button>
   )
 }
+
+// ─── Badge ────────────────────────────────────────────────────────────────────
+
+const SLA_LABELS: Record<string, string> = {
+  within: 'within_sla',
+  warning: 'approaching_breach',
+  met: 'sla_met',
+}
+
 export function Badge({ value, type = '' }: { value: string; type?: string }) {
   return (
-    <span className={'badge ' + type + ' ' + value}>
-      <span className="badge-dot" />
-      {label(
-        value === 'within'
-          ? 'within_sla'
-          : value === 'warning'
-            ? 'approaching_breach'
-            : value === 'met'
-              ? 'sla_met'
-              : value,
-      )}
+    <span className={`badge ${type} ${value}`.trim()}>
+      <span className="badge-dot" aria-hidden="true" />
+      {label(SLA_LABELS[value] ?? value)}
     </span>
   )
 }
+
+// ─── Field ────────────────────────────────────────────────────────────────────
+
 export function Field({
   label: text,
   children,
@@ -71,14 +79,17 @@ export function Field({
     </label>
   )
 }
+
+// ─── FormErrors ───────────────────────────────────────────────────────────────
+
 export function FormErrors({ error }: { error: unknown }) {
   if (!error) return null
   return (
     <div className="error-banner" role="alert">
-      <AlertCircle size={18} />
+      <AlertCircle size={18} aria-hidden="true" />
       <div>
         {errorText(error)}
-        {error instanceof ApiError && Object.entries(error.errors).length > 0 && (
+        {error instanceof ApiError && Object.keys(error.errors).length > 0 && (
           <ul>
             {Object.entries(error.errors).map(([key, messages]) => (
               <li key={key}>
@@ -94,28 +105,30 @@ export function FormErrors({ error }: { error: unknown }) {
     </div>
   )
 }
+
+// ─── Loading ──────────────────────────────────────────────────────────────────
+
 export function Loading({ label: text = 'Loading your workspace…' }: { label?: string }) {
   return (
-    <div className="loading" role="status">
-      <LoaderCircle size={24} className="spin" />
+    <div className="loading" role="status" aria-label={text}>
+      <LoaderCircle size={24} className="spin" aria-hidden="true" />
       <span>{text}</span>
     </div>
   )
 }
+
+// ─── ErrorState ───────────────────────────────────────────────────────────────
+
 export function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
   const status = error instanceof ApiError ? error.status : 0
+  const title =
+    status === 403 ? 'Access is restricted' : status === 404 ? 'Not found' : 'We could not load this'
   return (
-    <div className="empty-state">
+    <div className="empty-state" role="alert">
       <span className="empty-icon">
-        <AlertCircle size={28} />
+        <AlertCircle size={28} aria-hidden="true" />
       </span>
-      <h3>
-        {status === 403
-          ? 'Access is restricted'
-          : status === 404
-            ? 'Not found'
-            : 'We could not load this'}
-      </h3>
+      <h3>{title}</h3>
       <p>{errorText(error)}</p>
       <div className="actions">
         {retry && (
@@ -131,6 +144,9 @@ export function ErrorState({ error, retry }: { error: unknown; retry?: () => voi
     </div>
   )
 }
+
+// ─── Empty ────────────────────────────────────────────────────────────────────
+
 export function Empty({
   title = 'Nothing here yet',
   text,
@@ -143,7 +159,7 @@ export function Empty({
   return (
     <div className="empty-state">
       <span className="empty-icon">
-        <Inbox size={28} />
+        <Inbox size={28} aria-hidden="true" />
       </span>
       <h3>{title}</h3>
       <p>{text}</p>
@@ -151,6 +167,9 @@ export function Empty({
     </div>
   )
 }
+
+// ─── PageHeader ───────────────────────────────────────────────────────────────
+
 export function PageHeader({
   eyebrow,
   title,
@@ -173,7 +192,7 @@ export function PageHeader({
             Back
           </Link>
         )}
-        <div className="eyebrow">{eyebrow || 'YOUR SUPPORT WORKSPACE'}</div>
+        <div className="eyebrow">{eyebrow ?? 'YOUR SUPPORT WORKSPACE'}</div>
         <h1>{title}</h1>
         {description && <p>{description}</p>}
       </div>
@@ -181,19 +200,17 @@ export function PageHeader({
     </div>
   )
 }
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
 export function Pagination<T>({ page, change }: { page: Page<T>; change: (page: number) => void }) {
+  const from = page.total === 0 ? 0 : (page.current - 1) * page.perPage + 1
+  const to = Math.min(page.current * page.perPage, page.total)
+  const rangeLabel = page.total === 0 ? 'No records' : `${from}–${to} of ${page.total}`
+
   return (
     <div className="pagination">
-      <span>
-        {page.total === 0
-          ? 'No records'
-          : (page.current - 1) * page.perPage +
-            1 +
-            '–' +
-            Math.min(page.current * page.perPage, page.total) +
-            ' of ' +
-            page.total}
-      </span>
+      <span>{rangeLabel}</span>
       <div>
         <Button
           variant="ghost"
@@ -203,7 +220,7 @@ export function Pagination<T>({ page, change }: { page: Page<T>; change: (page: 
         >
           <ChevronLeft size={16} />
         </Button>
-        <span>
+        <span aria-live="polite">
           Page {page.current} of {page.last}
         </span>
         <Button
@@ -218,6 +235,9 @@ export function Pagination<T>({ page, change }: { page: Page<T>; change: (page: 
     </div>
   )
 }
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
 export function Modal({
   title,
   open,
@@ -230,13 +250,27 @@ export function Modal({
   children: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
-  const id = useId()
+
+  // Stable ID derived from title so aria-labelledby is predictable without useId
+  const id = useRef(`modal-${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`).current
+
   useEffect(() => {
-    if (open && !ref.current?.open) ref.current?.showModal()
-    if (!open && ref.current?.open) ref.current?.close()
+    const dialog = ref.current
+    if (!dialog) return
+    if (open && !dialog.open) dialog.showModal()
+    if (!open && dialog.open) dialog.close()
   }, [open])
+
+  // Close when clicking the backdrop (outside the dialog box)
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLDialogElement>) => {
+      if (e.target === ref.current) onClose()
+    },
+    [onClose],
+  )
+
   return (
-    <dialog ref={ref} aria-labelledby={id} className="modal" onCancel={onClose}>
+    <dialog ref={ref} aria-labelledby={id} className="modal" onCancel={onClose} onClick={handleClick}>
       <div className="modal-heading">
         <h2 id={id}>{title}</h2>
         <Button variant="ghost" aria-label="Close dialog" onClick={onClose}>
@@ -247,6 +281,9 @@ export function Modal({
     </dialog>
   )
 }
+
+// ─── TicketTable ──────────────────────────────────────────────────────────────
+
 export function TicketTable({
   tickets,
   compact = false,
@@ -270,11 +307,11 @@ export function TicketTable({
           {tickets.map((t) => (
             <tr key={t.id}>
               <td>
-                <Link to={'/tickets/' + t.id} className="ticket-title">
+                <Link to={`/tickets/${t.id}`} className="ticket-title">
                   <span className="ticket-number">{t.ticket_number}</span>
                   <strong>{t.subject}</strong>
                   <small>
-                    {t.category?.name || 'Category #' + t.category_id} · {date(t.created_at, true)}
+                    {t.category?.name ?? `Category #${t.category_id}`} · {date(t.created_at, true)}
                   </small>
                 </Link>
               </td>
@@ -287,8 +324,8 @@ export function TicketTable({
               {!compact && (
                 <td>
                   <span className="assignee">
-                    {t.assigned_agent?.name ||
-                      (t.assigned_agent_id ? 'Agent #' + t.assigned_agent_id : 'Unassigned')}
+                    {t.assigned_agent?.name ??
+                      (t.assigned_agent_id ? `Agent #${t.assigned_agent_id}` : 'Unassigned')}
                   </span>
                 </td>
               )}
@@ -303,3 +340,6 @@ export function TicketTable({
     </div>
   )
 }
+
+export { Skeleton, TableSkeleton, CardSkeleton, PageSkeleton } from './Skeleton'
+export { ErrorBoundary } from './ErrorBoundary'

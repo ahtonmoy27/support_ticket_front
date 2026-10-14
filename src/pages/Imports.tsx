@@ -11,12 +11,16 @@ import {
   Empty,
   ErrorState,
   FormErrors,
-  Loading,
   PageHeader,
+  PageSkeleton,
   Pagination,
+  TableSkeleton,
 } from '../components/ui'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { ApiPage, ImportRecord } from '../types'
+
 export function Imports() {
+  useDocumentTitle('Ticket Imports')
   const [page, setPage] = useState(1)
   const r = useResource<ApiPage<ImportRecord>>('/admin/imports?page=' + page)
   const [file, setFile] = useState<File | null>(null)
@@ -114,7 +118,7 @@ export function Imports() {
           </Button>
         </div>
         {r.loading ? (
-          <Loading />
+          <TableSkeleton rows={5} cols={6} />
         ) : r.error ? (
           <ErrorState error={r.error} retry={r.refresh} />
         ) : (
@@ -178,6 +182,11 @@ export function ImportDetail() {
   )
   const toast = useToast()
   const [busy, setBusy] = useState(false)
+  const importRecord = r.data?.data
+  useDocumentTitle(
+    importRecord ? `Import #${importRecord.id} · ${importRecord.filename}` : 'Import Details',
+  )
+
   async function errors() {
     setBusy(true)
     try {
@@ -188,7 +197,7 @@ export function ImportDetail() {
       setBusy(false)
     }
   }
-  if (r.loading && !r.data) return <Loading />
+  if (r.loading && !r.data) return <PageSkeleton title="Loading import details..." />
   if (r.error) return <ErrorState error={r.error} retry={r.refresh} />
   if (!r.data) return null
   const i = r.data.data

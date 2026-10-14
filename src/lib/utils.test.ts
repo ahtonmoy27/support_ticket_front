@@ -102,6 +102,7 @@ describe('utils', () => {
       description: 'System down',
       priority: 'high',
       status: 'open',
+      created_by: 10,
       customer_id: 10,
       assigned_agent_id: null,
       category_id: 1,
