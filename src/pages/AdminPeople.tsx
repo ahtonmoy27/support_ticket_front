@@ -38,7 +38,7 @@ export function Categories() {
         }
       />
       <section className="panel">
-        {r.loading ? (
+        {r.loading && !r.data ? (
           <CardSkeleton count={4} />
         ) : r.error ? (
           <ErrorState error={r.error} retry={r.refresh} />
@@ -160,7 +160,7 @@ export function Agents() {
         }
       />
       <section className="panel">
-        {r.loading ? (
+        {r.loading && !r.data ? (
           <TableSkeleton rows={5} cols={5} />
         ) : r.error ? (
           <ErrorState error={r.error} retry={r.refresh} />

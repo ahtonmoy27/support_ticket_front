@@ -44,10 +44,11 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
   const files = useResource<ApiPage<Attachment>>('/tickets/' + t.id + '/attachments?page=' + fp)
   const history = useResource<ApiPage<Activity>>('/tickets/' + t.id + '/activities?page=' + ap)
   const [confirm, setConfirm] = useState<string | null>(null)
-  const [assign, setAssign] = useState(false)
-  const [agentPage, setAgentPage] = useState(1)
-  const agents = useResource<ApiPage<User>>(assign ? '/admin/agents?page=' + agentPage : null)
-  const [agent, setAgent] = useState('')
+  const agents = useResource<ApiPage<User>>(
+    p.assign
+      ? `/admin/agents?category_id=${t.category_id}&available_only=1&per_page=100`
+      : null,
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   function refreshAll() {
@@ -63,7 +64,6 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
       await api('/tickets/' + t.id + '/' + name, { method: 'POST', ...(body ? { body } : {}) })
       notify('Ticket updated.')
       setConfirm(null)
-      setAssign(false)
       refreshAll()
     } catch (err) {
       setError(err)
@@ -127,7 +127,7 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
           </>
         }
       />
-      <FormErrors error={confirm || assign ? null : error} />
+      <FormErrors error={confirm ? null : error} />
       <div className="detail-layout">
         <div>
           <section className="panel ticket-description">
@@ -382,24 +382,48 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
             </div>
             <div>
               <span>Assigned to</span>
-              <strong>
-                <UserRound size={15} />
-                {t.assigned_agent?.name ||
-                  (t.assigned_agent_id ? 'Agent #' + t.assigned_agent_id : 'Unassigned')}
-              </strong>
+              {p.assign ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                  <select
+                    aria-label="Assign support agent"
+                    disabled={busy || agents.loading}
+                    value={t.assigned_agent_id ? String(t.assigned_agent_id) : ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (!val) return
+                      action('assign', { assigned_agent_id: Number(val) })
+                    }}
+                    style={{ fontSize: '12px', padding: '8px 10px' }}
+                  >
+                    <option value="" disabled>
+                      {agents.loading ? 'Loading agents…' : 'Select an agent…'}
+                    </option>
+                    {agents.data &&
+                      pageOf(agents.data).items.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name} ({a.email})
+                        </option>
+                      ))}
+                  </select>
+                  {agents.data && pageOf(agents.data).items.length === 0 && (
+                    <small style={{ color: '#b27a38' }}>
+                      No agents currently mapped to this category.
+                    </small>
+                  )}
+                  {t.assigned_agent && (
+                    <small style={{ color: '#526e45' }}>
+                      Currently: {t.assigned_agent.name}
+                    </small>
+                  )}
+                </div>
+              ) : (
+                <strong>
+                  <UserRound size={15} />
+                  {t.assigned_agent?.name ||
+                    (t.assigned_agent_id ? 'Agent #' + t.assigned_agent_id : 'Unassigned')}
+                </strong>
+              )}
             </div>
-            {p.assign && (
-              <Button
-                variant="secondary"
-                className="full-width"
-                onClick={() => {
-                  setAssign(true)
-                  setError(null)
-                }}
-              >
-                {t.assigned_agent_id ? 'Reassign agent' : 'Assign agent'}
-              </Button>
-            )}
             <div>
               <span>Priority</span>
               <Badge type="priority" value={t.priority} />
@@ -456,64 +480,6 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
           </Button>
           <Button busy={busy} onClick={() => action(confirm!)}>
             Confirm {confirm}
-          </Button>
-        </div>
-      </Modal>
-      <Modal
-        open={assign}
-        onClose={() => {
-          if (!busy) setAssign(false)
-        }}
-        title="Assign a support agent"
-      >
-        <p>Active, available agents mapped to this category.</p>
-        <FormErrors error={error} />
-        {agents.loading ? (
-          <Loading />
-        ) : agents.error ? (
-          <ErrorState error={agents.error} retry={agents.refresh} />
-        ) : (
-          agents.data && (
-            <>
-              <div className="agent-options">
-                {pageOf(agents.data)
-                  .items.filter(
-                    (a) =>
-                      a.is_active &&
-                      a.is_available &&
-                      a.categories?.some((c) => c.id === t.category_id),
-                  )
-                  .map((a) => (
-                    <label key={a.id}>
-                      <input
-                        type="radio"
-                        name="assigned_agent"
-                        value={a.id}
-                        checked={agent === String(a.id)}
-                        onChange={(e) => setAgent(e.target.value)}
-                      />
-                      <span>
-                        {a.name}
-                        <small>{a.email}</small>
-                      </span>
-                    </label>
-                  ))}
-              </div>
-              <Pagination page={pageOf(agents.data)} change={setAgentPage} />
-              <small>No eligible match? Check other pages.</small>
-            </>
-          )
-        )}
-        <div className="form-actions">
-          <Button variant="secondary" onClick={() => setAssign(false)}>
-            Cancel
-          </Button>
-          <Button
-            busy={busy}
-            disabled={!agent}
-            onClick={() => action('assign', { assigned_agent_id: Number(agent) })}
-          >
-            Assign agent
           </Button>
         </div>
       </Modal>

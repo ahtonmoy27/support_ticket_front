@@ -47,6 +47,13 @@ export function Imports() {
       setBusy(false)
     }
   }
+  async function downloadSample() {
+    try {
+      await download('/admin/imports/sample', 'ticket-import-sample.csv')
+    } catch (err) {
+      setError(err)
+    }
+  }
   function template() {
     const url = URL.createObjectURL(
       new Blob(
@@ -67,10 +74,16 @@ export function Imports() {
         title="Bring your tickets together"
         description="Import CSV records with validation, duplicate checks, and a clear results report."
         action={
-          <Button variant="secondary" onClick={template}>
-            <Download size={16} />
-            CSV template
-          </Button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button variant="secondary" onClick={downloadSample}>
+              <Download size={16} />
+              Sample CSV
+            </Button>
+            <Button variant="ghost" onClick={template}>
+              <Download size={16} />
+              Header template
+            </Button>
+          </div>
         }
       />
       <section className="panel import-upload-panel">
@@ -203,7 +216,7 @@ export function ImportDetail() {
   const i = r.data.data
   const processing = ['pending', 'processing'].includes(i.status)
   return (
-    <>
+    <div className="import-detail-page">
       <PageHeader
         back="/admin/imports"
         eyebrow={'IMPORT #' + i.id}
@@ -272,6 +285,6 @@ export function ImportDetail() {
           duplicated; an upload is not an idempotent retry.
         </span>
       </div>
-    </>
+    </div>
   )
 }

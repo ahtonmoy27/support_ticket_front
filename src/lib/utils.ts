@@ -28,14 +28,17 @@ export function date(value?: string | null, short = false): string {
 }
 
 /** Returns up to two uppercase initials from a display name */
-export function initials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
+export function initials(name?: string | null): string {
+  if (!name) return '—'
+  return (
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase() || '—'
+  )
 }
 
 /** Derives the set of permitted actions for a given user acting on a ticket */

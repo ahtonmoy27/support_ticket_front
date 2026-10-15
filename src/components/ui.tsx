@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import {
   AlertCircle,
@@ -257,8 +258,24 @@ export function Modal({
   useEffect(() => {
     const dialog = ref.current
     if (!dialog) return
-    if (open && !dialog.open) dialog.showModal()
-    if (!open && dialog.open) dialog.close()
+    if (open) {
+      if (!dialog.open && typeof dialog.showModal === 'function') {
+        try {
+          dialog.showModal()
+        } catch {
+          // ignore if already open or not supported
+        }
+      }
+    } else {
+      if (dialog.open && typeof dialog.close === 'function') {
+        dialog.close()
+      }
+    }
+    return () => {
+      if (dialog?.open && typeof dialog.close === 'function') {
+        dialog.close()
+      }
+    }
   }, [open])
 
   // Close when clicking the backdrop (outside the dialog box)
@@ -269,7 +286,9 @@ export function Modal({
     [onClose],
   )
 
-  return (
+  if (!open) return null
+
+  const modalNode = (
     <dialog ref={ref} aria-labelledby={id} className="modal" onCancel={onClose} onClick={handleClick}>
       <div className="modal-heading">
         <h2 id={id}>{title}</h2>
@@ -280,6 +299,8 @@ export function Modal({
       {children}
     </dialog>
   )
+
+  return typeof document !== 'undefined' ? createPortal(modalNode, document.body) : modalNode
 }
 
 // ─── TicketTable ──────────────────────────────────────────────────────────────

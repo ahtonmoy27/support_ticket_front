@@ -42,10 +42,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
 
     return (
-      <ErrorState
-        error={error}
-        retry={this.resetErrorBoundary}
-      />
+      <div className="error-boundary-wrapper">
+        <ErrorState
+          error={error}
+          retry={this.resetErrorBoundary}
+        />
+      </div>
     )
   }
 }
