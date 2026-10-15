@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import type { LinkProps } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowLeft,
@@ -123,7 +124,11 @@ export function Loading({ label: text = 'Loading your workspace…' }: { label?:
 export function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
   const status = error instanceof ApiError ? error.status : 0
   const title =
-    status === 403 ? 'Access is restricted' : status === 404 ? 'Not found' : 'We could not load this'
+    status === 403
+      ? 'Access is restricted'
+      : status === 404
+        ? 'Not found'
+        : 'We could not load this'
   return (
     <div className="empty-state" role="alert">
       <span className="empty-icon">
@@ -239,21 +244,33 @@ export function Pagination<T>({ page, change }: { page: Page<T>; change: (page: 
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
+export function TicketFormLink(props: LinkProps) {
+  const location = useLocation()
+  return <Link {...props} state={{ ...props.state, backgroundLocation: location }} />
+}
+
 export function Modal({
   title,
   open,
   onClose,
   children,
+  className = '',
 }: {
   title: string
   open: boolean
   onClose: () => void
   children: ReactNode
+  className?: string
 }) {
   const ref = useRef<HTMLDialogElement>(null)
 
   // Stable ID derived from title so aria-labelledby is predictable without useId
-  const id = useRef(`modal-${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}`).current
+  const id = useRef(
+    `modal-${title
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')}`,
+  ).current
 
   useEffect(() => {
     const dialog = ref.current
@@ -289,7 +306,13 @@ export function Modal({
   if (!open) return null
 
   const modalNode = (
-    <dialog ref={ref} aria-labelledby={id} className="modal" onCancel={onClose} onClick={handleClick}>
+    <dialog
+      ref={ref}
+      aria-labelledby={id}
+      className={`modal ${className}`.trim()}
+      onCancel={onClose}
+      onClick={handleClick}
+    >
       <div className="modal-heading">
         <h2 id={id}>{title}</h2>
         <Button variant="ghost" aria-label="Close dialog" onClick={onClose}>

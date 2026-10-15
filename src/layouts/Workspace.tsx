@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { useToast } from '../providers/toast'
-import { Button, PageSkeleton } from '../components/ui'
+import { Button, PageSkeleton, TicketFormLink } from '../components/ui'
 import { api } from '../lib/api'
 import { getEcho } from '../lib/echo'
 import { errorText, initials, label } from '../lib/utils'
@@ -70,7 +70,11 @@ export default function Workspace() {
 
     const channel = echo.private(`App.Models.User.${user.id}`)
     channel.notification((n: { event?: string; ticket_number?: string; ticket_id?: number }) => {
-      const eventLabel = label(String(n.event || 'update').replace('ticket.', '').replace('sla.', 'SLA '))
+      const eventLabel = label(
+        String(n.event || 'update')
+          .replace('ticket.', '')
+          .replace('sla.', 'SLA '),
+      )
       const ticketNum = n.ticket_number ? ` (#${n.ticket_number})` : ''
       notify(`New notification: ${eventLabel}${ticketNum}`, 'success')
       fetchUnread()
@@ -306,10 +310,10 @@ export default function Workspace() {
                 </span>
               )}
             </Link>
-            <Link to="/tickets/create" className="button primary small">
+            <TicketFormLink to="/tickets/create" className="button primary small">
               <Plus size={17} />
               <span>New ticket</span>
-            </Link>
+            </TicketFormLink>
           </div>
         </header>
 

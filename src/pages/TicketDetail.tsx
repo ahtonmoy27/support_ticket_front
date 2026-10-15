@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Check, Download, Edit3, LockKeyhole, Paperclip, Send, UserRound } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { useToast } from '../providers/toast'
@@ -17,6 +17,7 @@ import {
   PageHeader,
   PageSkeleton,
   Pagination,
+  TicketFormLink,
 } from '../components/ui'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { Activity, ApiPage, Attachment, Message, Ticket, User } from '../types'
@@ -45,9 +46,7 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
   const history = useResource<ApiPage<Activity>>('/tickets/' + t.id + '/activities?page=' + ap)
   const [confirm, setConfirm] = useState<string | null>(null)
   const agents = useResource<ApiPage<User>>(
-    p.assign
-      ? `/admin/agents?category_id=${t.category_id}&available_only=1&per_page=100`
-      : null,
+    p.assign ? `/admin/agents?category_id=${t.category_id}&available_only=1&per_page=100` : null,
   )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
@@ -93,10 +92,10 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
         action={
           <>
             {p.edit && (
-              <Link className="button secondary" to={'/tickets/' + t.id + '/edit'}>
+              <TicketFormLink className="button secondary" to={'/tickets/' + t.id + '/edit'}>
                 <Edit3 size={16} />
                 Edit
-              </Link>
+              </TicketFormLink>
             )}
             {p.claim && (
               <Button busy={busy} onClick={() => action('claim')}>
@@ -383,7 +382,9 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
             <div>
               <span>Assigned to</span>
               {p.assign ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}
+                >
                   <select
                     aria-label="Assign support agent"
                     disabled={busy || agents.loading}
@@ -411,9 +412,7 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
                     </small>
                   )}
                   {t.assigned_agent && (
-                    <small style={{ color: '#526e45' }}>
-                      Currently: {t.assigned_agent.name}
-                    </small>
+                    <small style={{ color: '#526e45' }}>Currently: {t.assigned_agent.name}</small>
                   )}
                 </div>
               ) : (

@@ -11,15 +11,19 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { Category, Ticket } from '../types'
 import { priorities } from '../types'
 
-export default function TicketFormPage() {
+type TicketFormProps = { modal?: boolean; onClose?: () => void }
+
+export default function TicketFormPage({ modal = false, onClose }: TicketFormProps) {
   const { id } = useParams()
   useDocumentTitle(id ? 'Edit Ticket' : 'Create Ticket')
   const ticket = useResource<{ data: Ticket }>(id ? '/tickets/' + id : null)
   if (id && ticket.loading) return <PageSkeleton title="Loading ticket..." />
   if (id && ticket.error) return <ErrorState error={ticket.error} retry={ticket.refresh} />
-  return <TicketEditor key={id || 'create'} ticket={ticket.data?.data} />
+  return (
+    <TicketEditor key={id || 'create'} ticket={ticket.data?.data} modal={modal} onClose={onClose} />
+  )
 }
-function TicketEditor({ ticket }: { ticket?: Ticket }) {
+function TicketEditor({ ticket, modal, onClose }: { ticket?: Ticket } & TicketFormProps) {
   const { user } = useAuth()
   const toast = useToast()
   const navigate = useNavigate()
@@ -89,12 +93,14 @@ function TicketEditor({ ticket }: { ticket?: Ticket }) {
   }
   return (
     <>
-      <PageHeader
-        back={ticket ? '/tickets/' + ticket.id : '/tickets'}
-        eyebrow={ticket ? ticket.ticket_number : 'START A CONVERSATION'}
-        title={ticket ? 'Edit ticket' : 'How can we help?'}
-        description="A few details help us get your request to the right person."
-      />
+      {!modal && (
+        <PageHeader
+          back={ticket ? '/tickets/' + ticket.id : '/tickets'}
+          eyebrow={ticket ? ticket.ticket_number : 'START A CONVERSATION'}
+          title={ticket ? 'Edit ticket' : 'How can we help?'}
+          description="A few details help us get your request to the right person."
+        />
+      )}
       <div className="form-layout">
         <section className="panel form-panel">
           <form onSubmit={submit}>
@@ -211,9 +217,18 @@ function TicketEditor({ ticket }: { ticket?: Ticket }) {
               )}
             </fieldset>
             <div className="form-actions">
-              <Link className="button secondary" to={ticket ? '/tickets/' + ticket.id : '/tickets'}>
-                Cancel
-              </Link>
+              {modal ? (
+                <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>
+                  Cancel
+                </Button>
+              ) : (
+                <Link
+                  className="button secondary"
+                  to={ticket ? '/tickets/' + ticket.id : '/tickets'}
+                >
+                  Cancel
+                </Link>
+              )}
               <Button busy={busy} type="submit">
                 {savedTicket ? 'Retry attachments' : ticket ? 'Save changes' : 'Create ticket'}
                 <ArrowRight size={16} />

@@ -4,7 +4,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Clock3,
-  Inbox,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -23,6 +22,7 @@ import {
   PageHeader,
   TableSkeleton,
   TicketTable,
+  TicketFormLink,
 } from '../components/ui'
 import { label, pageOf } from '../lib/utils'
 import type { ApiPage, Metrics, Ticket as TicketType } from '../types'
@@ -53,6 +53,14 @@ export default function Dashboard() {
           text: 'Waiting for an owner',
         },
         {
+          name: 'Critical tickets',
+          value: Number(m.by_priority.critical || 0),
+          icon: ShieldCheck,
+          tone: 'red',
+          to: '/tickets?priority=critical',
+          text: 'Across all statuses',
+        },
+        {
           name: 'Approaching SLA',
           value: m.sla_warning,
           icon: Clock3,
@@ -68,60 +76,76 @@ export default function Dashboard() {
           to: '/tickets?sla_state=breached',
           text: 'Needs your attention',
         },
+        {
+          name: 'Resolved tickets',
+          value: Number(m.by_status.resolved || 0),
+          icon: Ticket,
+          tone: 'green',
+          to: '/tickets?status=resolved',
+          text: 'Resolution completed',
+        },
       ]
     : []
   const priorityTotal = m
     ? priorities.reduce((sum, p) => sum + Number(m.by_priority[p] || 0), 0)
     : 0
+  const activeTotal = m
+    ? ['open', 'in_progress', 'waiting_for_customer'].reduce(
+        (sum, status) => sum + Number(m.by_status[status as keyof Metrics['by_status']] || 0),
+        0,
+      )
+    : 0
+  const health = [
+    {
+      name: 'Within SLA',
+      count: Math.max(0, activeTotal - Number(m?.sla_warning || 0) - Number(m?.sla_breached || 0)),
+      color: '#0f8f6b',
+      filter: 'within',
+    },
+    {
+      name: 'Approaching breach',
+      count: Number(m?.sla_warning || 0),
+      color: '#d49a36',
+      filter: 'warning',
+    },
+    {
+      name: 'SLA breached',
+      count: Number(m?.sla_breached || 0),
+      color: '#ce2f47',
+      filter: 'breached',
+    },
+  ]
+  const circumference = 2 * Math.PI * 52
   return (
     <>
       <PageHeader
-        eyebrow="A CLEARER PICTURE"
-        title={'Hello, ' + (user?.name.split(' ')[0] || 'there') + '.'}
-        description="Every request is a chance to make someone's day a little easier."
+        eyebrow="SUPPORT OPERATIONS"
+        title="Dashboard"
+        description={
+          'Welcome back, ' +
+          (user?.name.split(' ')[0] || 'there') +
+          '. Here is your support overview.'
+        }
         action={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              metrics.refresh()
-              tickets.refresh()
-            }}
-          >
-            <RefreshCw size={16} />
-            Refresh overview
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                metrics.refresh()
+                tickets.refresh()
+              }}
+            >
+              <RefreshCw size={16} />
+              Refresh overview
+            </Button>
+            <TicketFormLink to="/tickets/create" className="button primary">
+              <Plus size={16} /> New ticket
+            </TicketFormLink>
+          </>
         }
       />
-      <section className="welcome-strip">
-        <div>
-          <span className="welcome-label">
-            <span className="live-dot" />
-            YOUR WORKSPACE, AT A GLANCE
-          </span>
-          <h2>Less noise. More meaningful support.</h2>
-          <p>Stay on top of requests, keep commitments, and move conversations forward.</p>
-          <Link to="/tickets/create" className="button light">
-            <Plus size={17} />
-            Create a ticket
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-        <div className="welcome-art" aria-hidden="true">
-          <div className="art-orbit orbit-one" />
-          <div className="art-orbit orbit-two" />
-          <div className="art-card">
-            <Inbox size={35} />
-            <span>
-              One place.
-              <br />
-              <strong>Every conversation.</strong>
-            </span>
-            <span className="art-check">✓</span>
-          </div>
-        </div>
-      </section>
       {metrics.loading ? (
-        <CardSkeleton count={4} />
+        <CardSkeleton count={6} />
       ) : metrics.error ? (
         <ErrorState error={metrics.error} retry={metrics.refresh} />
       ) : (
@@ -145,6 +169,59 @@ export default function Dashboard() {
               ))}
             </section>
             <div className="dashboard-columns">
+              <section className="panel sla-overview-panel">
+                <div className="panel-heading">
+                  <div>
+                    <h2>SLA health</h2>
+                    <p>Active tickets in your permitted scope</p>
+                  </div>
+                </div>
+                <div className="sla-health">
+                  <svg
+                    className="sla-health-ring"
+                    viewBox="0 0 140 140"
+                    role="img"
+                    aria-label={`${activeTotal} active tickets. ${health.map((item) => `${item.name}: ${item.count}`).join('. ')}`}
+                  >
+                    <circle cx="70" cy="70" r="52" fill="none" stroke="#edf1f5" strokeWidth="14" />
+                    {health.map((item, index) => (
+                      <circle
+                        key={item.filter}
+                        cx="70"
+                        cy="70"
+                        r="52"
+                        fill="none"
+                        stroke={item.color}
+                        strokeWidth="14"
+                        strokeDasharray={`${activeTotal ? (item.count / activeTotal) * circumference : 0} ${circumference}`}
+                        strokeDashoffset={
+                          (-health
+                            .slice(0, index)
+                            .reduce((sum, previous) => sum + previous.count, 0) /
+                            (activeTotal || 1)) *
+                          circumference
+                        }
+                        transform="rotate(-90 70 70)"
+                      />
+                    ))}
+                    <text x="70" y="69" textAnchor="middle">
+                      {activeTotal}
+                    </text>
+                    <text className="ring-caption" x="70" y="87" textAnchor="middle">
+                      ACTIVE TICKETS
+                    </text>
+                  </svg>
+                  <div className="sla-health-legend">
+                    {health.map((item) => (
+                      <Link key={item.filter} to={'/tickets?sla_state=' + item.filter}>
+                        <span className="health-dot" style={{ background: item.color }} />
+                        <span>{item.name}</span>
+                        <strong>{item.count}</strong>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </section>
               <section className="panel">
                 <div className="panel-heading">
                   <div>
@@ -257,9 +334,9 @@ export default function Dashboard() {
             title="A fresh start"
             text="Your support requests will appear here."
             action={
-              <Link className="button secondary" to="/tickets/create">
+              <TicketFormLink className="button secondary" to="/tickets/create">
                 Create your first ticket
-              </Link>
+              </TicketFormLink>
             }
           />
         )}

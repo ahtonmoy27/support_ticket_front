@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Filter, Plus, Search, X } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { useResource } from '../hooks/useResource'
@@ -11,6 +11,7 @@ import {
   Pagination,
   TableSkeleton,
   TicketTable,
+  TicketFormLink,
 } from '../components/ui'
 import { label, pageOf } from '../lib/utils'
 import type { ApiPage, Category, Ticket, User } from '../types'
@@ -71,10 +72,10 @@ export default function Tickets() {
         title={user?.role === 'customer' ? 'My tickets' : 'Ticket workspace'}
         description="Every conversation, organized. Find what matters and take the next step."
         action={
-          <Link className="button primary" to="/tickets/create">
+          <TicketFormLink className="button primary" to="/tickets/create">
             <Plus size={17} />
             New ticket
-          </Link>
+          </TicketFormLink>
         }
       />
       <section className="panel">
@@ -297,9 +298,9 @@ export default function Tickets() {
             title="No tickets found"
             text="Try another filter, or start a new support conversation."
             action={
-              <Link to="/tickets/create" className="button secondary">
+              <TicketFormLink to="/tickets/create" className="button secondary">
                 Create a ticket
-              </Link>
+              </TicketFormLink>
             }
           />
         )}
