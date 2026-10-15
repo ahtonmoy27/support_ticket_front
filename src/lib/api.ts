@@ -4,6 +4,7 @@ export class ApiError extends Error {
     message: string,
     public errors: Record<string, string[]> = {},
     public retryAfter: string | null = null,
+    public code: string | null = null,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -27,6 +28,7 @@ async function failed(response: Response): Promise<ApiError> {
   const data = (await response.json().catch(() => null)) as {
     message?: string
     errors?: Record<string, string[]>
+    code?: string
   } | null
   if (response.status === 401) window.dispatchEvent(new Event('desk:unauthorized'))
   return new ApiError(
@@ -36,6 +38,7 @@ async function failed(response: Response): Promise<ApiError> {
       : data?.message || 'Request failed. Please try again.',
     data?.errors ?? {},
     response.headers.get('Retry-After'),
+    data?.code ?? null,
   )
 }
 

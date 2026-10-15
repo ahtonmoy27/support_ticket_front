@@ -31,6 +31,7 @@ export interface Ticket {
   assigned_agent?: Named | null
   category?: Named
   sla_started_at: string
+  sla_timezone?: string
   sla_warning_at: string
   sla_due_at: string
   sla_breached_at: string | null
@@ -59,6 +60,7 @@ export interface Attachment {
 export interface Activity {
   id: number
   actor_id: number | null
+  actor?: Named | null
   action: string
   old_values: Record<string, unknown> | unknown[]
   new_values: Record<string, unknown> | unknown[]

@@ -316,7 +316,7 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
                                   ? 'System'
                                   : a.actor_id === user?.id
                                     ? user.name
-                                    : 'User #' + a.actor_id}{' '}
+                                    : a.actor?.name || 'User #' + a.actor_id}{' '}
                                 · {date(a.created_at)}
                               </p>
                               {(() => {
@@ -366,7 +366,7 @@ function Detail({ ticket: t, refresh }: { ticket: Ticket; refresh: () => void })
             <Badge value={t.sla_state} />
             <small>RESOLUTION DUE</small>
             <h3>{date(t.sla_due_at)}</h3>
-            <p>Business hours apply · Asia/Dhaka</p>
+            <p>Business hours apply · {t.sla_timezone || 'UTC'}</p>
             {t.sla_breached_at && (
               <div className="historic-breach">
                 Previously breached at {date(t.sla_breached_at)}

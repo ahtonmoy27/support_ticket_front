@@ -4,7 +4,7 @@ import { ArrowRight, Check, Eye, EyeOff, MessageSquare, ShieldCheck } from 'luci
 import { useAuth } from '../providers/auth'
 import { Button, Field, FormErrors } from '../components/ui'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 
 export default function AuthPage({ register = false }: { register?: boolean }) {
   useDocumentTitle(register ? 'Create Account' : 'Sign In')
@@ -17,6 +17,7 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
+  const [notice, setNotice] = useState('')
   if (auth.user) return <Navigate to="/dashboard" replace />
   function change(key: keyof typeof form, value: string) {
     setForm((v) => ({ ...v, [key]: value }))
@@ -32,15 +33,32 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
         return
       }
       await auth.authenticate(
-        register ? '/verify-email' : '/login',
-        register ? { email: form.email, code } : { email: form.email, password: form.password },
+        awaitingCode ? '/verify-email' : '/login',
+        awaitingCode ? { email: form.email, code } : { email: form.email, password: form.password },
       )
       const from = (location.state as { from?: string } | null)?.from
       navigate(from && from.startsWith('/') && !from.startsWith('//') ? from : '/dashboard', {
         replace: true,
       })
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'email_unverified') {
+        setAwaitingCode(true)
+        setNotice('Enter your email verification code, or request a new code below.')
+      }
       setError(err)
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function resend() {
+    setBusy(true)
+    setError(null)
+    setNotice('')
+    try {
+      await api('/resend-verification', { method: 'POST', body: { email: form.email } })
+      setNotice('A new code has been requested. Check your email. Codes expire after 15 minutes.')
+    } catch (caught) {
+      setError(caught)
     } finally {
       setBusy(false)
     }
@@ -118,6 +136,7 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
           </p>
           <form onSubmit={submit}>
             <FormErrors error={error} />
+            {notice && <p role="status">{notice}</p>}
             {awaitingCode ? (
               <>
                 <Field label="6-digit verification code" hint={`Sent to ${form.email}`}>
@@ -138,14 +157,23 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
                 <button
                   className="auth-text-button"
                   type="button"
-                  onClick={() =>
-                    void api('/resend-verification', {
-                      method: 'POST',
-                      body: { email: form.email },
-                    })
-                  }
+                  disabled={busy}
+                  onClick={() => void resend()}
                 >
                   Send a new code
+                </button>
+                <button
+                  type="button"
+                  className="auth-text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    setAwaitingCode(false)
+                    setCode('')
+                    setError(null)
+                    setNotice('')
+                  }}
+                >
+                  Back to {register ? 'registration' : 'sign in'}
                 </button>
               </>
             ) : (

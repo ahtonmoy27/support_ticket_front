@@ -14,6 +14,7 @@ export default function PasswordReset() {
   const [complete, setComplete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
+  const [notice, setNotice] = useState('')
   if (user) return <Navigate to="/dashboard" replace />
 
   async function submit(event: React.FormEvent) {
@@ -28,6 +29,20 @@ export default function PasswordReset() {
         await api('/reset-password', { method: 'POST', body: form })
         setComplete(true)
       }
+    } catch (caught) {
+      setError(caught)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function resend() {
+    setBusy(true)
+    setError(null)
+    setNotice('')
+    try {
+      await api('/forgot-password', { method: 'POST', body: { email: form.email } })
+      setNotice('If the account exists, a new code has been requested. Check your email.')
     } catch (caught) {
       setError(caught)
     } finally {
@@ -52,7 +67,7 @@ export default function PasswordReset() {
             <br />
             <em>Back in your hands.</em>
           </h1>
-          <p>Secure verification codes expire after 10 minutes.</p>
+          <p>Secure verification codes expire after 15 minutes.</p>
         </div>
       </section>
       <section className="auth-form-section">
@@ -68,6 +83,7 @@ export default function PasswordReset() {
           ) : (
             <form onSubmit={submit}>
               <FormErrors error={error} />
+              {notice && <p role="status">{notice}</p>}
               <Field label="Email address">
                 <input
                   type="email"
@@ -124,6 +140,31 @@ export default function PasswordReset() {
                 {codeSent ? 'Reset password' : 'Send code'}
                 <ArrowRight size={17} />
               </Button>
+              {codeSent && (
+                <>
+                  <button
+                    type="button"
+                    className="auth-text-button"
+                    disabled={busy}
+                    onClick={() => void resend()}
+                  >
+                    Send a new code
+                  </button>
+                  <button
+                    type="button"
+                    className="auth-text-button"
+                    disabled={busy}
+                    onClick={() => {
+                      setCodeSent(false)
+                      setForm((v) => ({ ...v, code: '', password: '', password_confirmation: '' }))
+                      setError(null)
+                      setNotice('')
+                    }}
+                  >
+                    Use a different email
+                  </button>
+                </>
+              )}
             </form>
           )}
           <p className="auth-switch">
