@@ -4,6 +4,7 @@ import { ArrowRight, Check, Eye, EyeOff, MessageSquare, ShieldCheck } from 'luci
 import { useAuth } from '../providers/auth'
 import { Button, Field, FormErrors } from '../components/ui'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { api } from '../lib/api'
 
 export default function AuthPage({ register = false }: { register?: boolean }) {
   useDocumentTitle(register ? 'Create Account' : 'Sign In')
@@ -12,6 +13,8 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
   const location = useLocation()
   const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '' })
   const [visible, setVisible] = useState(false)
+  const [awaitingCode, setAwaitingCode] = useState(false)
+  const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
   if (auth.user) return <Navigate to="/dashboard" replace />
@@ -23,9 +26,14 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
     setBusy(true)
     setError(null)
     try {
+      if (register && !awaitingCode) {
+        await api('/register', { method: 'POST', body: form })
+        setAwaitingCode(true)
+        return
+      }
       await auth.authenticate(
-        register ? '/register' : '/login',
-        register ? form : { email: form.email, password: form.password },
+        register ? '/verify-email' : '/login',
+        register ? { email: form.email, code } : { email: form.email, password: form.password },
       )
       const from = (location.state as { from?: string } | null)?.from
       navigate(from && from.startsWith('/') && !from.startsWith('//') ? from : '/dashboard', {
@@ -110,63 +118,97 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
           </p>
           <form onSubmit={submit}>
             <FormErrors error={error} />
-            {register && (
-              <Field label="Full name">
-                <input
-                  autoComplete="name"
-                  required
-                  maxLength={255}
-                  value={form.name}
-                  onChange={(e) => change('name', e.target.value)}
-                />
-              </Field>
-            )}
-            <Field label="Email address">
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                maxLength={255}
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) => change('email', e.target.value)}
-              />
-            </Field>
-            <Field label="Password" hint={register ? 'At least 12 characters.' : undefined}>
-              <span className="password-input">
-                <input
-                  type={visible ? 'text' : 'password'}
-                  autoComplete={register ? 'new-password' : 'current-password'}
-                  required
-                  minLength={register ? 12 : undefined}
-                  value={form.password}
-                  onChange={(e) => change('password', e.target.value)}
-                />
+            {awaitingCode ? (
+              <>
+                <Field label="6-digit verification code" hint={`Sent to ${form.email}`}>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    required
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  />
+                </Field>
+                <Button className="full-width" busy={busy} type="submit">
+                  Verify email
+                  <ArrowRight size={17} />
+                </Button>
                 <button
+                  className="auth-text-button"
                   type="button"
-                  aria-label={visible ? 'Hide password' : 'Show password'}
-                  onClick={() => setVisible((v) => !v)}
+                  onClick={() =>
+                    void api('/resend-verification', {
+                      method: 'POST',
+                      body: { email: form.email },
+                    })
+                  }
                 >
-                  {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+                  Send a new code
                 </button>
-              </span>
-            </Field>
-            {register && (
-              <Field label="Confirm password">
-                <input
-                  type={visible ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  minLength={12}
-                  value={form.password_confirmation}
-                  onChange={(e) => change('password_confirmation', e.target.value)}
-                />
-              </Field>
+              </>
+            ) : (
+              <>
+                {register && (
+                  <Field label="Full name">
+                    <input
+                      autoComplete="name"
+                      required
+                      maxLength={255}
+                      value={form.name}
+                      onChange={(e) => change('name', e.target.value)}
+                    />
+                  </Field>
+                )}
+                <Field label="Email address">
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    required
+                    maxLength={255}
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={(e) => change('email', e.target.value)}
+                  />
+                </Field>
+                <Field label="Password" hint={register ? 'At least 12 characters.' : undefined}>
+                  <span className="password-input">
+                    <input
+                      type={visible ? 'text' : 'password'}
+                      autoComplete={register ? 'new-password' : 'current-password'}
+                      required
+                      minLength={register ? 12 : undefined}
+                      value={form.password}
+                      onChange={(e) => change('password', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      aria-label={visible ? 'Hide password' : 'Show password'}
+                      onClick={() => setVisible((v) => !v)}
+                    >
+                      {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </span>
+                </Field>
+                {register && (
+                  <Field label="Confirm password">
+                    <input
+                      type={visible ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      required
+                      minLength={12}
+                      value={form.password_confirmation}
+                      onChange={(e) => change('password_confirmation', e.target.value)}
+                    />
+                  </Field>
+                )}
+                <Button className="full-width" busy={busy} type="submit">
+                  {register ? 'Create account' : 'Sign in'}
+                  <ArrowRight size={17} />
+                </Button>
+              </>
             )}
-            <Button className="full-width" busy={busy} type="submit">
-              {register ? 'Create account' : 'Sign in'}
-              <ArrowRight size={17} />
-            </Button>
           </form>
           <p className="auth-switch">
             {register ? 'Already have an account?' : 'New to Support Desk?'}{' '}
@@ -174,6 +216,11 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
               {register ? 'Sign in' : 'Create an account'}
             </Link>
           </p>
+          {!register && (
+            <p className="auth-switch">
+              <Link to="/forgot-password">Forgot password?</Link>
+            </p>
+          )}
           <div className="auth-security">
             <ShieldCheck size={17} />
             Your conversations stay private.

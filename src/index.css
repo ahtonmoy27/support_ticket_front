@@ -2135,6 +2135,16 @@ tbody tr:hover {
   font-weight: 600;
   margin-left: 5px;
 }
+
+.auth-text-button {
+  display: block;
+  margin: 1rem auto 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  font: inherit;
+}
 .auth-security {
   display: flex;
   align-items: center;

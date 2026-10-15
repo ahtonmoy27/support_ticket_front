@@ -6,16 +6,21 @@ import Workspace from './layouts/Workspace'
 
 // Lazy load route pages for optimal bundle splitting
 const AuthPage = lazy(() => import('./pages/Auth'))
+const PasswordReset = lazy(() => import('./pages/PasswordReset'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Tickets = lazy(() => import('./pages/Tickets'))
 const TicketForm = lazy(() => import('./pages/TicketForm'))
 const TicketDetail = lazy(() => import('./pages/TicketDetail'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const Agents = lazy(() => import('./pages/AdminPeople').then((m) => ({ default: m.Agents })))
-const Categories = lazy(() => import('./pages/AdminPeople').then((m) => ({ default: m.Categories })))
+const Categories = lazy(() =>
+  import('./pages/AdminPeople').then((m) => ({ default: m.Categories })),
+)
 const SlaPolicies = lazy(() => import('./pages/SlaPolicies'))
 const Imports = lazy(() => import('./pages/Imports').then((m) => ({ default: m.Imports })))
-const ImportDetail = lazy(() => import('./pages/Imports').then((m) => ({ default: m.ImportDetail })))
+const ImportDetail = lazy(() =>
+  import('./pages/Imports').then((m) => ({ default: m.ImportDetail })),
+)
 
 function Protected() {
   const { user } = useAuth()
@@ -62,6 +67,7 @@ export default function App() {
           <Route path="/" element={<Navigate to={auth.user ? '/dashboard' : '/login'} replace />} />
           <Route path="/login" element={<AuthPage key="login" />} />
           <Route path="/register" element={<AuthPage key="register" register />} />
+          <Route path="/forgot-password" element={<PasswordReset />} />
           <Route element={<Protected />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tickets" element={<Tickets />} />
@@ -76,7 +82,10 @@ export default function App() {
               <Route path="/admin/imports" element={<Imports />} />
               <Route path="/admin/imports/:id" element={<ImportDetail />} />
             </Route>
-            <Route path="*" element={<ErrorState error={new Error('This page does not exist.')} />} />
+            <Route
+              path="*"
+              element={<ErrorState error={new Error('This page does not exist.')} />}
+            />
           </Route>
         </Routes>
       </Suspense>
