@@ -37,3 +37,4 @@ export function playNotificationSound(): void {
     // Autoplay restrictions or headless testing environment — fail silently
   }
 }
+

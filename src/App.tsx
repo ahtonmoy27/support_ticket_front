@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import {
   matchPath,
   Navigate,
@@ -12,22 +12,23 @@ import type { Location } from 'react-router-dom'
 import { useAuth } from './providers/auth'
 import { ErrorBoundary, ErrorState, Loading, Modal, PageSkeleton } from './components/ui'
 import Workspace from './layouts/Workspace'
+import { lazyWithRetry } from './lib/lazyWithRetry'
 
-// Lazy load route pages for optimal bundle splitting
-const AuthPage = lazy(() => import('./pages/Auth'))
-const PasswordReset = lazy(() => import('./pages/PasswordReset'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Tickets = lazy(() => import('./pages/Tickets'))
-const TicketForm = lazy(() => import('./pages/TicketForm'))
-const TicketDetail = lazy(() => import('./pages/TicketDetail'))
-const Notifications = lazy(() => import('./pages/Notifications'))
-const Agents = lazy(() => import('./pages/AdminPeople').then((m) => ({ default: m.Agents })))
-const Categories = lazy(() =>
+// Lazy load route pages with automated reload on deployment chunk invalidation
+const AuthPage = lazyWithRetry(() => import('./pages/Auth'))
+const PasswordReset = lazyWithRetry(() => import('./pages/PasswordReset'))
+const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'))
+const Tickets = lazyWithRetry(() => import('./pages/Tickets'))
+const TicketForm = lazyWithRetry(() => import('./pages/TicketForm'))
+const TicketDetail = lazyWithRetry(() => import('./pages/TicketDetail'))
+const Notifications = lazyWithRetry(() => import('./pages/Notifications'))
+const Agents = lazyWithRetry(() => import('./pages/AdminPeople').then((m) => ({ default: m.Agents })))
+const Categories = lazyWithRetry(() =>
   import('./pages/AdminPeople').then((m) => ({ default: m.Categories })),
 )
-const SlaPolicies = lazy(() => import('./pages/SlaPolicies'))
-const Imports = lazy(() => import('./pages/Imports').then((m) => ({ default: m.Imports })))
-const ImportDetail = lazy(() =>
+const SlaPolicies = lazyWithRetry(() => import('./pages/SlaPolicies'))
+const Imports = lazyWithRetry(() => import('./pages/Imports').then((m) => ({ default: m.Imports })))
+const ImportDetail = lazyWithRetry(() =>
   import('./pages/Imports').then((m) => ({ default: m.ImportDetail })),
 )
 

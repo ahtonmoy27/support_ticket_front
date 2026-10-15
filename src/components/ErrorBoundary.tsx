@@ -29,6 +29,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   resetErrorBoundary = () => {
+    const msg = this.state.error?.message || ''
+    if (
+      msg.includes('dynamically imported module') ||
+      msg.includes('Loading chunk') ||
+      msg.includes('Failed to fetch dynamically imported')
+    ) {
+      window.location.reload()
+      return
+    }
     this.props.onReset?.()
     this.setState({ error: null })
   }
@@ -41,10 +50,19 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return this.props.fallback(error, this.resetErrorBoundary)
     }
 
+    const isChunkError =
+      error.message?.includes('dynamically imported module') ||
+      error.message?.includes('Loading chunk') ||
+      error.message?.includes('Failed to fetch dynamically imported')
+
+    const displayError = isChunkError
+      ? new Error('A new version of SupportDesk was published. Please refresh to load the latest update.')
+      : error
+
     return (
       <div className="error-boundary-wrapper">
         <ErrorState
-          error={error}
+          error={displayError}
           retry={this.resetErrorBoundary}
         />
       </div>
