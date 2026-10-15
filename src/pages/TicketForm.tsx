@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Paperclip, ShieldCheck } from 'lucide-react'
+import { ArrowRight, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { useToast } from '../providers/toast'
 import { useResource } from '../hooks/useResource'
 import { api, upload } from '../lib/api'
 import { errorText, label, permissions, validateFiles } from '../lib/utils'
 import { Button, ErrorState, Field, FormErrors, PageHeader, PageSkeleton } from '../components/ui'
+import { DropZone } from '../components/DropZone'
+import { useDraft } from '../hooks/useDraft'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { Category, Ticket } from '../types'
 import { priorities } from '../types'
@@ -28,13 +30,18 @@ function TicketEditor({ ticket, modal, onClose }: { ticket?: Ticket } & TicketFo
   const toast = useToast()
   const navigate = useNavigate()
   const categories = useResource<{ data: Category[] }>('/categories')
-  const [form, setForm] = useState({
+  const initialForm = {
     subject: ticket?.subject || '',
     description: ticket?.description || '',
     priority: ticket?.priority || 'medium',
     category_id: String(ticket?.category_id || ''),
     customer_id: '',
-  })
+  }
+  const [form, setForm, clearDraft, draftRestored] = useDraft(
+    'draft:ticket_create',
+    initialForm,
+    !ticket,
+  )
   const [files, setFiles] = useState<File[]>([])
   const [savedTicket, setSavedTicket] = useState<Ticket | null>(null)
   const [busy, setBusy] = useState(false)
@@ -83,6 +90,7 @@ function TicketEditor({ ticket, modal, onClose }: { ticket?: Ticket } & TicketFo
         setError(new Error('Ticket saved. Retry failed files: ' + failures.join('; ')))
         return
       }
+      if (!ticket) clearDraft()
       toast(ticket ? 'Ticket updated.' : 'Ticket ' + result.data.ticket_number + ' created.')
       navigate('/tickets/' + result.data.id)
     } catch (err) {
@@ -104,6 +112,39 @@ function TicketEditor({ ticket, modal, onClose }: { ticket?: Ticket } & TicketFo
       <div className="form-layout">
         <section className="panel form-panel">
           <form onSubmit={submit}>
+            {draftRestored && !ticket && (
+              <div
+                style={{
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#f2f8eb',
+                  border: '1px solid #d4e7c5',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                }}
+              >
+                <span className="draft-badge">Draft auto-restored</span>
+                <button
+                  type="button"
+                  className="text-link"
+                  style={{ fontSize: '11px', color: '#b75e4e' }}
+                  onClick={() => {
+                    clearDraft()
+                    setForm({
+                      subject: '',
+                      description: '',
+                      priority: 'medium',
+                      category_id: '',
+                      customer_id: '',
+                    })
+                  }}
+                >
+                  Discard draft
+                </button>
+              </div>
+            )}
             {savedTicket && (
               <p role="status">
                 Ticket {savedTicket.ticket_number} saved. Retry the remaining files, or{' '}
@@ -200,19 +241,13 @@ function TicketEditor({ ticket, modal, onClose }: { ticket?: Ticket } & TicketFo
                   label="Attachments (optional)"
                   hint="PDF, PNG, JPEG, TXT, DOCX · up to 10 MB each. Uploaded after the ticket is saved."
                 >
-                  <span className="upload-zone">
-                    <Paperclip size={20} />
-                    <span>Choose supporting files</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
-                      onChange={(e) => setFiles(Array.from(e.target.files || []))}
-                    />
-                  </span>
-                  {files.map((f) => (
-                    <small key={f.name}>{f.name}</small>
-                  ))}
+                  <DropZone
+                    files={files}
+                    onChange={setFiles}
+                    disabled={busy || !!savedTicket}
+                    accept=".pdf,.png,.jpg,.jpeg,.txt,.docx"
+                    hint="PDF, PNG, JPEG, TXT, DOCX · up to 10 MB each"
+                  />
                 </Field>
               )}
             </fieldset>

@@ -19,6 +19,7 @@ import {
   Pagination,
   TicketFormLink,
 } from '../components/ui'
+import { useDraft } from '../hooks/useDraft'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import type { Activity, ApiPage, Attachment, Message, Ticket, User } from '../types'
 
@@ -494,8 +495,11 @@ function Composer({
   note: boolean
   onSent: () => void
 }) {
-  const [body, setBody] = useState('')
   const [visibility, setVisibility] = useState('public')
+  const [body, setBody, clearDraft, draftRestored] = useDraft(
+    `draft:ticket:${ticketId}:${visibility}`,
+    '',
+  )
   const [files, setFiles] = useState<File[]>([])
   const [messageId, setMessageId] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -537,6 +541,7 @@ function Composer({
         return
       }
       setBody('')
+      clearDraft()
       setFiles([])
       setMessageId(null)
       toast(visibility === 'internal' ? 'Internal note added.' : 'Reply sent.')
@@ -550,7 +555,12 @@ function Composer({
   return (
     <form className={'reply-composer ' + visibility} onSubmit={send}>
       <div className="composer-heading">
-        <strong>{messageId ? 'Reply saved · retry attachments' : 'Add to the conversation'}</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <strong>{messageId ? 'Reply saved · retry attachments' : 'Add to the conversation'}</strong>
+          {draftRestored && !messageId && body && (
+            <span className="draft-badge">Draft restored</span>
+          )}
+        </div>
         {note && (
           <select
             aria-label="Reply visibility"
@@ -599,6 +609,7 @@ function Composer({
           onClick={() => {
             setMessageId(null)
             setBody('')
+            clearDraft()
             setFiles([])
             setError(null)
           }}

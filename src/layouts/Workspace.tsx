@@ -24,6 +24,7 @@ import { useToast } from '../providers/toast'
 import { Button, PageSkeleton, TicketFormLink } from '../components/ui'
 import { api } from '../lib/api'
 import NotificationBell from '../components/NotificationBell'
+import { CommandPalette } from '../components/CommandPalette'
 import { errorText, initials, label } from '../lib/utils'
 
 const UNREAD_POLL_MS = 60_000
@@ -44,6 +45,19 @@ export default function Workspace() {
   const [leaving, setLeaving] = useState(false)
   const [search, setSearch] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // Global Ctrl+K / Cmd+K Command Palette trigger
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const fetchUnread = useCallback(() => {
     api<{ count: number }>('/notifications/unread-count')
@@ -258,15 +272,26 @@ export default function Workspace() {
             </span>
           </div>
 
-          <form className="global-search" role="search" onSubmit={handleSearchSubmit}>
+          <form
+            className="global-search"
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setPaletteOpen(true)
+            }}
+            onClick={() => setPaletteOpen(true)}
+            style={{ cursor: 'pointer' }}
+          >
             <Search size={16} aria-hidden="true" />
             <input
               aria-label="Search all permitted tickets"
-              placeholder="Search tickets…"
+              placeholder="Search tickets or commands (Ctrl+K)…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => setPaletteOpen(true)}
+              style={{ cursor: 'pointer' }}
             />
-            <kbd>↵</kbd>
+            <kbd>⌘K</kbd>
           </form>
 
           <div className="topbar-right">
@@ -295,6 +320,8 @@ export default function Workspace() {
           </span>
           <span>Times shown in Asia/Dhaka</span>
         </footer>
+
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       </div>
     </div>
   )
