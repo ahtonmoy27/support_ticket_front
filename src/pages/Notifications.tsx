@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Bell, Check } from 'lucide-react'
 import { useResource } from '../hooks/useResource'
@@ -13,6 +13,10 @@ export default function Notifications() {
   useDocumentTitle('Notifications')
   const [page, setPage] = useState(1)
   const result = useResource<ApiPage<DeskNotification>>('/notifications?page=' + page, 60000)
+  useEffect(() => {
+    window.addEventListener('desk:notifications-changed', result.refresh)
+    return () => window.removeEventListener('desk:notifications-changed', result.refresh)
+  }, [result.refresh])
   const notify = useToast()
   const [markingAll, setMarkingAll] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)

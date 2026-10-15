@@ -11,6 +11,11 @@ vi.mock('../providers/auth', () => ({
 }))
 vi.mock('../providers/toast', () => ({ useToast: () => vi.fn() }))
 vi.mock('../lib/api', () => ({ api: vi.fn() }))
+vi.mock('../components/NotificationBell', () => ({
+  default: ({ unreadCount }: { unreadCount: number }) => (
+    <button aria-label={`Notifications, ${unreadCount} unread`} />
+  ),
+}))
 afterEach(() => {
   cleanup()
   vi.mocked(api).mockReset()
@@ -22,13 +27,13 @@ it('shows current notification count and refreshes it immediately after a read a
       <Workspace />
     </MemoryRouter>,
   )
-  await screen.findByRole('link', { name: 'Notifications, 3 unread' })
+  await screen.findByRole('button', { name: 'Notifications, 3 unread' })
   expect(screen.getByRole('link', { name: 'Available queue' }).className).toContain('active')
   expect(screen.getByRole('link', { name: 'Assigned to me' }).className).not.toContain('active')
   expect(screen.getByRole('link', { name: 'All tickets' }).className).not.toContain('active')
   fireEvent(window, new Event('desk:notifications-changed'))
   await waitFor(() =>
-    expect(screen.getByRole('link', { name: 'Notifications, 0 unread' })).toBeDefined(),
+    expect(screen.getByRole('button', { name: 'Notifications, 0 unread' })).toBeDefined(),
   )
   expect(api).toHaveBeenCalledTimes(2)
 })

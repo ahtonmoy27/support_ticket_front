@@ -23,6 +23,7 @@ import {
   TableSkeleton,
   TicketTable,
   TicketFormLink,
+  Tooltip,
 } from '../components/ui'
 import { label, pageOf } from '../lib/utils'
 import type { ApiPage, Metrics, Ticket as TicketType } from '../types'
@@ -153,19 +154,33 @@ export default function Dashboard() {
           <>
             <section className="metrics-grid">
               {counts.map((c) => (
-                <Link key={c.name} to={c.to} className={'metric-card ' + c.tone}>
-                  <div className="metric-top">
-                    <span>{c.name}</span>
-                    <span className="metric-icon">
-                      <c.icon size={20} />
-                    </span>
-                  </div>
-                  <strong>{c.value}</strong>
-                  <div className="metric-bottom">
-                    <span>{c.text}</span>
-                    <ArrowUpRight size={16} />
-                  </div>
-                </Link>
+                <Tooltip
+                  key={c.name}
+                  className="metric-tooltip"
+                  focusable={false}
+                  content={
+                    <>
+                      <strong>
+                        {c.name}: {c.value}
+                      </strong>
+                      <p>{c.text}. Select to view matching tickets in your permitted scope.</p>
+                    </>
+                  }
+                >
+                  <Link to={c.to} className={'metric-card ' + c.tone}>
+                    <div className="metric-top">
+                      <span>{c.name}</span>
+                      <span className="metric-icon">
+                        <c.icon size={20} />
+                      </span>
+                    </div>
+                    <strong>{c.value}</strong>
+                    <div className="metric-bottom">
+                      <span>{c.text}</span>
+                      <ArrowUpRight size={16} />
+                    </div>
+                  </Link>
+                </Tooltip>
               ))}
             </section>
             <div className="dashboard-columns">

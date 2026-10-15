@@ -16,6 +16,7 @@ import {
 import { ApiError } from '../lib/api'
 import { date, errorText, label } from '../lib/utils'
 import type { Page, Ticket } from '../types'
+import { Tooltip } from './Tooltip'
 
 // ─── Button ──────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,8 @@ export function Button({
   return (
     <button
       {...props}
+      aria-busy={busy || undefined}
+      title={props.title ?? props['aria-label']}
       disabled={props.disabled || busy}
       className={`button ${variant} ${className}`.trim()}
     >
@@ -46,12 +49,35 @@ const SLA_LABELS: Record<string, string> = {
   met: 'sla_met',
 }
 
+const BADGE_DETAILS: Record<string, string> = {
+  open: 'This ticket is open and awaiting the next action.',
+  in_progress: 'An agent is working on this ticket.',
+  waiting_for_customer:
+    'Waiting for a customer response. The SLA clock continues during configured business hours.',
+  resolved: 'A resolution has been provided. The ticket can now be closed by an authorized user.',
+  closed: 'This ticket is closed. Further replies and changes are disabled.',
+  low: 'Low priority: a question or minor issue.',
+  medium: 'Medium priority: a normal support request.',
+  high: 'High priority: important work is affected.',
+  critical: 'Critical priority: an urgent issue is blocking service.',
+  within: 'This active ticket is before its SLA warning threshold.',
+  warning:
+    'This active ticket has reached its SLA warning threshold. Its deadline has not passed yet.',
+  breached: 'This ticket has exceeded its SLA target.',
+  met: 'This ticket was resolved within its SLA target.',
+  active: 'This record is active and available for use.',
+  inactive: 'This record is inactive.',
+}
+
 export function Badge({ value, type = '' }: { value: string; type?: string }) {
   return (
-    <span className={`badge ${type} ${value}`.trim()}>
+    <Tooltip
+      className={`badge ${type} ${value}`.trim()}
+      content={BADGE_DETAILS[value] ?? label(value)}
+    >
       <span className="badge-dot" aria-hidden="true" />
       {label(SLA_LABELS[value] ?? value)}
-    </span>
+    </Tooltip>
   )
 }
 
@@ -351,13 +377,44 @@ export function TicketTable({
           {tickets.map((t) => (
             <tr key={t.id}>
               <td>
-                <Link to={`/tickets/${t.id}`} className="ticket-title">
-                  <span className="ticket-number">{t.ticket_number}</span>
-                  <strong>{t.subject}</strong>
-                  <small>
-                    {t.category?.name ?? `Category #${t.category_id}`} · {date(t.created_at, true)}
-                  </small>
-                </Link>
+                <Tooltip
+                  focusable={false}
+                  className="ticket-preview-trigger"
+                  content={
+                    <div className="ticket-hover-details">
+                      <strong>
+                        {t.ticket_number} · {t.subject}
+                      </strong>
+                      <p>
+                        {t.description
+                          ? t.description.slice(0, 220) + (t.description.length > 220 ? '…' : '')
+                          : 'Open this ticket to view the conversation.'}
+                      </p>
+                      <dl>
+                        <dt>Requester</dt>
+                        <dd>{t.customer?.name ?? `Customer #${t.customer_id}`}</dd>
+                        <dt>Assigned to</dt>
+                        <dd>
+                          {t.assigned_agent?.name ??
+                            (t.assigned_agent_id ? `Agent #${t.assigned_agent_id}` : 'Unassigned')}
+                        </dd>
+                        <dt>Priority</dt>
+                        <dd>{label(t.priority)}</dd>
+                        <dt>Due · Dhaka</dt>
+                        <dd>{date(t.sla_due_at)}</dd>
+                      </dl>
+                    </div>
+                  }
+                >
+                  <Link to={`/tickets/${t.id}`} className="ticket-title">
+                    <span className="ticket-number">{t.ticket_number}</span>
+                    <strong>{t.subject}</strong>
+                    <small>
+                      {t.category?.name ?? `Category #${t.category_id}`} ·{' '}
+                      {date(t.created_at, true)}
+                    </small>
+                  </Link>
+                </Tooltip>
               </td>
               <td>
                 <Badge value={t.status} />
@@ -387,3 +444,4 @@ export function TicketTable({
 
 export { Skeleton, TableSkeleton, CardSkeleton, PageSkeleton } from './Skeleton'
 export { ErrorBoundary } from './ErrorBoundary'
+export { Tooltip } from './Tooltip'

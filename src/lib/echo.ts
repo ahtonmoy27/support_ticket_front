@@ -5,15 +5,15 @@ import { csrf } from './api'
 declare global {
   interface Window {
     Pusher: typeof Pusher
-    Echo?: Echo<any>
+    Echo?: Echo<'pusher'>
   }
 }
 
 window.Pusher = Pusher
 
-let echoInstance: Echo<any> | null = null
+let echoInstance: Echo<'pusher'> | null = null
 
-export function getEcho(): Echo<any> | null {
+export function getEcho(): Echo<'pusher'> | null {
   const key = import.meta.env.VITE_PUSHER_APP_KEY
   if (!key) {
     return null
@@ -32,9 +32,9 @@ export function getEcho(): Echo<any> | null {
     cluster,
     forceTLS: true,
     authEndpoint: `${apiBase}/broadcasting/auth`,
-    authorizer: (channel: { name: string }) => {
+    authorizer: (channel) => {
       return {
-        authorize: (socketId: string, callback: (error: Error | null, authData?: any) => void) => {
+        authorize: (socketId, callback) => {
           csrf()
             .then((token) => {
               return fetch(`${apiBase}/broadcasting/auth`, {
@@ -53,14 +53,14 @@ export function getEcho(): Echo<any> | null {
             })
             .then(async (response) => {
               if (!response.ok) {
-                callback(new Error(`Broadcasting auth failed with HTTP ${response.status}`))
+                callback(new Error(`Broadcasting auth failed with HTTP ${response.status}`), null)
                 return
               }
               const data = await response.json()
               callback(null, data)
             })
             .catch((err) => {
-              callback(err instanceof Error ? err : new Error('Broadcasting authorization error'))
+              callback(err instanceof Error ? err : new Error('Broadcasting authorization error'), null)
             })
         },
       }
