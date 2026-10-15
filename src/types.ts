@@ -68,7 +68,14 @@ export interface Activity {
 }
 export interface DeskNotification {
   id: string
-  data: { ticket_id: number; event: string; event_id: number }
+  data: {
+    ticket_id: number
+    event: string
+    event_id: number
+    ticket_number?: string
+    message?: string
+    url?: string
+  }
   read_at: string | null
   created_at: string
 }

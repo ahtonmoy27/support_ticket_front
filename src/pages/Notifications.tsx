@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Bell, Check } from 'lucide-react'
+import { ArrowUpRight, Bell, Check, Trash2 } from 'lucide-react'
 import { useResource } from '../hooks/useResource'
 import { useToast } from '../providers/toast'
 import { api } from '../lib/api'
@@ -33,6 +33,20 @@ export default function Notifications() {
       notify(errorText(err), 'error')
     } finally {
       setMarkingAll(false)
+    }
+  }
+
+  async function dismiss(id: string) {
+    setBusy(id)
+    try {
+      await api('/notifications/' + id, { method: 'DELETE' })
+      result.refresh()
+      window.dispatchEvent(new Event('desk:notifications-changed'))
+      notify('Notification dismissed', 'success')
+    } catch (err) {
+      notify(errorText(err), 'error')
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -82,19 +96,31 @@ export default function Notifications() {
                           {label(n.data.event.replace('ticket.', '').replace('sla.', 'SLA '))}
                         </strong>
                         <p>
-                          Ticket #{n.data.ticket_id} · {date(n.created_at)}
+                          {n.data.message
+                            ? `${n.data.message} · ${date(n.created_at)}`
+                            : `Ticket #${n.data.ticket_number ?? n.data.ticket_id} · ${date(n.created_at)}`}
                         </p>
                         <Link className="text-link" to={'/tickets/' + n.data.ticket_id}>
                           View ticket
                           <ArrowUpRight size={14} />
                         </Link>
                       </div>
-                      {!n.read_at && (
-                        <Button variant="secondary" busy={busy === n.id} onClick={() => read(n.id)}>
-                          <Check size={14} />
-                          Mark read
+                      <div className="flex items-center gap-2">
+                        {!n.read_at && (
+                          <Button variant="secondary" busy={busy === n.id} onClick={() => read(n.id)}>
+                            <Check size={14} />
+                            Mark read
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          busy={busy === n.id}
+                          onClick={() => dismiss(n.id)}
+                          aria-label="Dismiss notification"
+                        >
+                          <Trash2 size={15} />
                         </Button>
-                      )}
+                      </div>
                     </article>
                   ))}
                 </div>
