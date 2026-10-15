@@ -10,7 +10,7 @@ import {
 } from 'react-router-dom'
 import type { Location } from 'react-router-dom'
 import { useAuth } from './providers/auth'
-import { ErrorBoundary, ErrorState, Loading, Modal, PageSkeleton } from './components/ui'
+import { BrandLoader, ErrorBoundary, ErrorState, Loading, Modal, PageSkeleton } from './components/ui'
 import Workspace from './layouts/Workspace'
 import { lazyWithRetry } from './lib/lazyWithRetry'
 
@@ -74,7 +74,7 @@ export default function App() {
   if (auth.loading) {
     return (
       <div className="bootstrap-screen">
-        <Loading label="Opening Support Desk…" />
+        <BrandLoader label="Opening Support Desk…" sublabel="MAKE EVERY REPLY COUNT" />
       </div>
     )
   }

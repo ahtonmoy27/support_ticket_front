@@ -134,9 +134,21 @@ export function FormErrors({ error }: { error: unknown }) {
   )
 }
 
+import { BrandLoader } from './BrandLoader'
+export { BrandLoader }
+
 // ─── Loading ──────────────────────────────────────────────────────────────────
 
-export function Loading({ label: text = 'Loading your workspace…' }: { label?: string }) {
+export function Loading({
+  label: text = 'Loading your workspace…',
+  logo = false,
+}: {
+  label?: string
+  logo?: boolean
+}) {
+  if (logo) {
+    return <BrandLoader label={text} />
+  }
   return (
     <div className="loading" role="status" aria-label={text}>
       <LoaderCircle size={24} className="spin" aria-hidden="true" />
