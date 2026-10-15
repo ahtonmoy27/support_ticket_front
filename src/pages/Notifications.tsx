@@ -14,7 +14,24 @@ export default function Notifications() {
   const [page, setPage] = useState(1)
   const result = useResource<ApiPage<DeskNotification>>('/notifications?page=' + page, 60000)
   const notify = useToast()
+  const [markingAll, setMarkingAll] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
+  const hasUnread = result.data ? pageOf(result.data).items.some((n) => !n.read_at) : false
+
+  async function markAllRead() {
+    setMarkingAll(true)
+    try {
+      await api('/notifications/read-all', { method: 'POST' })
+      result.refresh()
+      window.dispatchEvent(new Event('desk:notifications-changed'))
+      notify('All notifications marked as read', 'success')
+    } catch (err) {
+      notify(errorText(err), 'error')
+    } finally {
+      setMarkingAll(false)
+    }
+  }
+
   async function read(id: string) {
     setBusy(id)
     try {
@@ -32,6 +49,14 @@ export default function Notifications() {
       <PageHeader
         title="Your notifications"
         description="The important updates, without the noise."
+        action={
+          hasUnread ? (
+            <Button variant="secondary" busy={markingAll} onClick={markAllRead}>
+              <Check size={16} />
+              Mark all as read
+            </Button>
+          ) : undefined
+        }
       />
       <section className="panel">
         {result.loading ? (

@@ -23,6 +23,7 @@ import { useAuth } from '../providers/auth'
 import { useToast } from '../providers/toast'
 import { Button, PageSkeleton } from '../components/ui'
 import { api } from '../lib/api'
+import { getEcho } from '../lib/echo'
 import { errorText, initials, label } from '../lib/utils'
 
 const UNREAD_POLL_MS = 60_000
@@ -61,6 +62,26 @@ export default function Workspace() {
       window.removeEventListener('desk:notifications-changed', fetchUnread)
     }
   }, [fetchUnread])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const echo = getEcho()
+    if (!echo) return
+
+    const channel = echo.private(`App.Models.User.${user.id}`)
+    channel.notification((n: { event?: string; ticket_number?: string; ticket_id?: number }) => {
+      const eventLabel = label(String(n.event || 'update').replace('ticket.', '').replace('sla.', 'SLA '))
+      const ticketNum = n.ticket_number ? ` (#${n.ticket_number})` : ''
+      notify(`New notification: ${eventLabel}${ticketNum}`, 'success')
+      fetchUnread()
+      window.dispatchEvent(new Event('desk:notifications-changed'))
+    })
+
+    return () => {
+      channel.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated')
+      echo.leave(`App.Models.User.${user.id}`)
+    }
+  }, [user?.id, fetchUnread, notify])
 
   // Close sidebar on Escape
   useEffect(() => {

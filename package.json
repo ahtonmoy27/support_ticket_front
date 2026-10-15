@@ -14,7 +14,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "laravel-echo": "^2.6.1",
     "lucide-react": "^1.56.0",
+    "pusher-js": "^8.6.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4"

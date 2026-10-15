@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => {
       changeOrigin: true,
       cookieDomainRewrite: '',
     },
+    '/broadcasting': {
+      target: env.API_PROXY_TARGET || 'http://127.0.0.1:8000',
+      changeOrigin: true,
+      cookieDomainRewrite: '',
+    },
   }
   return {
     plugins: [react(), tailwindcss()],

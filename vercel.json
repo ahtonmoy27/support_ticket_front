@@ -6,6 +6,10 @@
       "destination": "http://138.252.125.172:8001/api/:path*"
     },
     {
+      "source": "/broadcasting/:path*",
+      "destination": "http://138.252.125.172:8001/broadcasting/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
