@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { ArrowUpRight, Bell, Check, RefreshCw, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { getEcho } from '../lib/echo'
+import { playNotificationSound } from '../lib/sound'
 import { date, errorText, label, pageOf } from '../lib/utils'
 import { useResource } from '../hooks/useResource'
 import { useToast } from '../providers/toast'
@@ -45,6 +46,7 @@ export default function NotificationBell({
     for (const n of [...incoming].reverse()) {
       const key = `event:${n.data.event_id}`
       if (initialized.current && !n.read_at && !seen.current.has(key)) {
+        playNotificationSound()
         notify(
           `${label(n.data.event.replace('ticket.', '').replace('sla.', 'SLA '))} · Ticket #${n.data.ticket_id}`,
         )
@@ -65,6 +67,7 @@ export default function NotificationBell({
       const key = n.event_id != null ? `event:${n.event_id}` : `broadcast:${n.id}`
       if (!seen.current.has(key)) {
         seen.current.add(key)
+        playNotificationSound()
         const title = label((n.event || 'update').replace('ticket.', '').replace('sla.', 'SLA '))
         const ticket = n.ticket_number || n.ticket_id
         notify(`New notification: ${title}${ticket ? ` · Ticket #${ticket}` : ''}`)
