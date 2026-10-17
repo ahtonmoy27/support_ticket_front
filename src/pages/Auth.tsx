@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, Eye, EyeOff, MessageSquare, ShieldCheck } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, Eye, EyeOff, MessageSquare, ShieldCheck, Sparkles } from 'lucide-react'
 import { useAuth } from '../providers/auth'
 import { Button, Field, FormErrors } from '../components/ui'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
@@ -127,6 +127,19 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
       </section>
       <section className="auth-form-section">
         <div className="auth-form-wrap">
+          <Link
+            to="/guide"
+            className="flex items-center justify-between w-full px-3.5 py-2.5 mb-5 rounded-xl bg-[#eef5ee] border border-[#d2e2d2] text-[#174a40] text-xs font-semibold hover:bg-[#e2efe2] transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles size={15} className="text-[#2c7a6b]" />
+              <span>New here? Explore System Guide & Test Accounts</span>
+            </span>
+            <span className="flex items-center gap-1 font-bold text-[#174a40]">
+              <span>View Guide</span>
+              <ArrowRight size={13} />
+            </span>
+          </Link>
           <span className="eyebrow">WELCOME TO SUPPORT DESK</span>
           <h2>{register ? 'A little support starts here.' : 'Welcome back.'}</h2>
           <p>
@@ -249,6 +262,12 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
               <Link to="/forgot-password">Forgot password?</Link>
             </p>
           )}
+          <p className="auth-switch" style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
+            <Link to="/guide" className="font-semibold text-[#174a40] inline-flex items-center gap-1.5 hover:underline">
+              <BookOpen size={14} />
+              <span>Read Architecture, Features & SLA Guide</span>
+            </Link>
+          </p>
           <div className="auth-security">
             <ShieldCheck size={17} />
             Your conversations stay private.

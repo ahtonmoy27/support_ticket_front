@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
   }
   return {
     plugins: [react(), tailwindcss()],
-    server: { host: '127.0.0.1', port: 5173, strictPort: true, proxy },
+    server: { host: '127.0.0.1', port: 5173, proxy },
     preview: { host: '127.0.0.1', port: 4173, proxy },
     test: {
       environment: 'jsdom',

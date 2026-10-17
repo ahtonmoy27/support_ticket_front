@@ -15,6 +15,7 @@ import Workspace from './layouts/Workspace'
 import { lazyWithRetry } from './lib/lazyWithRetry'
 
 // Lazy load route pages with automated reload on deployment chunk invalidation
+const Guide = lazyWithRetry(() => import('./pages/Guide'))
 const AuthPage = lazyWithRetry(() => import('./pages/Auth'))
 const PasswordReset = lazyWithRetry(() => import('./pages/PasswordReset'))
 const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'))
@@ -91,7 +92,8 @@ export default function App() {
     <ErrorBoundary>
       <Suspense fallback={<PageSkeleton />}>
         <Routes location={ticketFormOpen ? returnLocation : location}>
-          <Route path="/" element={<Navigate to={auth.user ? '/dashboard' : '/login'} replace />} />
+          <Route path="/" element={<Navigate to={auth.user ? '/dashboard' : '/guide'} replace />} />
+          <Route path="/guide" element={<Guide />} />
           <Route path="/login" element={<AuthPage key="login" />} />
           <Route path="/register" element={<AuthPage key="register" register />} />
           <Route path="/forgot-password" element={<PasswordReset />} />

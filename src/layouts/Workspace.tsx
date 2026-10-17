@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
+  BookOpen,
   ChevronRight,
   Clock3,
   FileUp,
