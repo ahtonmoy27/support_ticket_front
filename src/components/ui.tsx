@@ -161,19 +161,29 @@ export function Loading({
 
 export function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
   const status = error instanceof ApiError ? error.status : 0
+  const rawMsg = error instanceof Error ? error.message : String(error || '')
+  const isDomError =
+    rawMsg.includes('insertBefore') ||
+    rawMsg.includes('removeChild') ||
+    rawMsg.includes('Node')
   const title =
     status === 403
       ? 'Access is restricted'
       : status === 404
         ? 'Not found'
-        : 'We could not load this'
+        : isDomError
+          ? 'Display update in progress'
+          : 'Unable to load content'
+  const description = isDomError
+    ? 'A browser extension or display update temporarily interrupted the view. Please try again.'
+    : errorText(error)
   return (
     <div className="empty-state" role="alert">
       <span className="empty-icon">
         <AlertCircle size={28} aria-hidden="true" />
       </span>
       <h3>{title}</h3>
-      <p>{errorText(error)}</p>
+      <p>{description}</p>
       <div className="actions">
         {retry && (
           <Button variant="secondary" onClick={retry}>
