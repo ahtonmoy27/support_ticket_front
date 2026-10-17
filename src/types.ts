@@ -30,10 +30,10 @@ export interface Ticket {
   customer?: Named
   assigned_agent?: Named | null
   category?: Named
-  sla_started_at: string
+  sla_started_at?: string | null
   sla_timezone?: string
-  sla_warning_at: string
-  sla_due_at: string
+  sla_warning_at?: string | null
+  sla_due_at?: string | null
   sla_breached_at: string | null
   resolved_at: string | null
   closed_at: string | null
